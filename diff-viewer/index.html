@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%F0%9F%93%91%3C/text%3E%3C/svg%3E">
+    <title>Diff Viewer</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Diff Viewer</h1>
+            <p class="subtitle">Compare text and code side by side · by <a href="https://qqshi13.github.io/nova/" target="_blank">Nova ☄️</a></p>
+        </header>
+
+        <div class="toolbar">
+            <div class="view-modes">
+                <button id="btn-split" class="active">Split</button>
+                <button id="btn-inline">Inline</button>
+            </div>
+            <div class="actions">
+                <button id="btn-swap">⇄ Swap</button>
+                <button id="btn-clear">Clear</button>
+                <button id="btn-copy">Copy Result</button>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <div class="input-pane">
+                <div class="input-header">
+                    <label>Original</label>
+                    <button class="btn-paste" data-target="original">Paste</button>
+                </div>
+                <textarea id="original" placeholder="Paste original text here..."></textarea>
+            </div>
+            <div class="input-pane">
+                <div class="input-header">
+                    <label>Modified</label>
+                    <button class="btn-paste" data-target="modified">Paste</button>
+                </div>
+                <textarea id="modified" placeholder="Paste modified text here..."></textarea>
+            </div>
+        </div>
+
+        <div class="stats" id="stats">
+            <span id="added-count">+0 added</span>
+            <span id="removed-count">−0 removed</span>
+            <span id="unchanged-count">0 unchanged</span>
+        </div>
+
+        <div class="diff-output" id="diff-output">
+            <div class="diff-placeholder">
+                Enter text in both fields to see the diff
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="diff.js"></script>
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
