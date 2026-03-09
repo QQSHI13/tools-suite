@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tools Suite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #58a6ff 0%, #a371f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            color: #8b949e;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .tool-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+        .tool-card:hover {
+            border-color: #58a6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(88, 166, 255, 0.1);
+        }
+        .tool-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            color: #58a6ff;
+        }
+        .tool-card p {
+            color: #8b949e;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        .credits {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid #30363d;
+            text-align: center;
+            color: #8b949e;
+            font-size: 0.9rem;
+        }
+        .credits a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+        .credits a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Tools Suite</h1>
+        <p class="subtitle">A collection of useful web tools</p>
+        
+        <div class="tools-grid">
+            <a href="api-tester/" class="tool-card">
+                <h3>API Tester</h3>
+                <p>Test HTTP requests with all methods, custom headers, and request history</p>
+            </a>
+            
+            <a href="json-viewer/" class="tool-card">
+                <h3>JSON Viewer</h3>
+                <p>Visualize, validate, and format JSON with collapsible tree view</p>
+            </a>
+            
+            <a href="regex-tester/" class="tool-card">
+                <h3>Regex Tester</h3>
+                <p>Test regular expressions with live matching and pattern library</p>
+            </a>
+            
+            <a href="jwt-decoder/" class="tool-card">
+                <h3>JWT Decoder</h3>
+                <p>Decode and inspect JWT tokens with expiry detection</p>
+            </a>
+            
+            <a href="csv-json/" class="tool-card">
+                <h3>CSV to JSON</h3>
+                <p>Convert CSV files to JSON with smart parsing options</p>
+            </a>
+            
+            <a href="diff-viewer/" class="tool-card">
+                <h3>Diff Viewer</h3>
+                <p>Compare text side-by-side or inline with change highlighting</p>
+            </a>
+            
+            <a href="keycode-logger/" class="tool-card">
+                <h3>Keycode Logger</h3>
+                <p>Log and display keyboard keycodes and events</p>
+            </a>
+        </div>
+        
+        <div class="credits">
+            <p>Built with ❤️ by QQ | Nova ☄️</p>
+        </div>
+    </div>
+</body>
+</html>
