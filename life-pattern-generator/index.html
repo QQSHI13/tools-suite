@@ -300,6 +300,7 @@
             <div class="format-selector">
                 <button class="format-btn active" data-format="list">List</button>
                 <button class="format-btn" data-format="json">JSON</button>
+                <button class="format-btn" data-format="lifelab">LifeLab</button>
                 <button class="format-btn" data-format="rle">RLE</button>
                 <button class="format-btn" data-format="plaintext">Plaintext</button>
             </div>
@@ -470,6 +471,20 @@
                         generation,
                         gridSize,
                         cells
+                    }, null, 2);
+                    break;
+                    
+                case 'lifelab':
+                    output = JSON.stringify({
+                        category: "custom",
+                        patterns: [
+                            {
+                                name: "Custom Pattern",
+                                desc: `Generation ${generation}`,
+                                cells: cells,
+                                rule: "B3/S23"
+                            }
+                        ]
                     }, null, 2);
                     break;
                     
@@ -652,7 +667,12 @@
         });
         
         downloadBtn.addEventListener('click', () => {
-            const ext = currentFormat === 'json' ? 'json' : (currentFormat === 'rle' ? 'rle' : 'txt');
+            let ext = 'txt';
+            if (currentFormat === 'json' || currentFormat === 'lifelab') {
+                ext = 'json';
+            } else if (currentFormat === 'rle') {
+                ext = 'rle';
+            }
             const blob = new Blob([outputEl.value], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
