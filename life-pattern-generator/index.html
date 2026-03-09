@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game of Life Pattern Generator</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230d1117'/><circle cx='50' cy='50' r='8' fill='%2358a6ff'/></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .game-section {
+            background: rgba(22, 27, 34, 0.8);
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+        }
+        
+        h1 {
+            font-size: 1.75rem;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #58a6ff 0%, #a371f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #e6edf3;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+        
+        button.primary {
+            background: linear-gradient(135deg, #238636 0%, #2ea043 100%);
+            border-color: #238636;
+        }
+        
+        button.primary:hover {
+            background: linear-gradient(135deg, #2ea043 0%, #3fb950 100%);
+        }
+        
+        button.danger {
+            background: linear-gradient(135deg, #da3633 0%, #f85149 100%);
+            border-color: #da3633;
+        }
+        
+        button.danger:hover {
+            background: linear-gradient(135deg, #f85149 0%, #ff6b61 100%);
+        }
+        
+        .grid-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            overflow: auto;
+            padding: 10px;
+        }
+        
+        #grid {
+            display: grid;
+            gap: 1px;
+            background: #21262d;
+            border: 2px solid #30363d;
+            border-radius: 8px;
+            padding: 2px;
+        }
+        
+        .cell {
+            width: 18px;
+            height: 18px;
+            background: #0d1117;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        
+        .cell:hover {
+            background: #30363d;
+        }
+        
+        .cell.alive {
+            background: #58a6ff;
+            box-shadow: 0 0 8px rgba(88, 166, 255, 0.5);
+        }
+        
+        .settings {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .setting-group label {
+            font-size: 0.85rem;
+            color: #7d8590;
+        }
+        
+        .setting-group input, .setting-group select {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #e6edf3;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: #7d8590;
+        }
+        
+        .stats span {
+            color: #58a6ff;
+            font-weight: 600;
+        }
+        
+        .output-section {
+            background: rgba(22, 27, 34, 0.8);
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .output-section h2 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+        }
+        
+        .format-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .format-btn {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        
+        .format-btn.active {
+            background: #58a6ff;
+            border-color: #58a6ff;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 250px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #e6edf3;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        
+        .output-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #7d8590;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        
+        .back-link:hover {
+            color: #58a6ff;
+        }
+        
+        .back-link svg {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-section">
+            <a href="../" class="back-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to Tools Suite
+            </a>
+            
+            <h1>🎮 Game of Life Pattern Generator</h1>
+            
+            <div class="settings">
+                <div class="setting-group">
+                    <label>Grid Size</label>
+                    <input type="number" id="gridSize" value="30" min="10" max="80">
+                </div>
+                <div class="setting-group">
+                    <label>Speed (ms)</label>
+                    <input type="number" id="speed" value="100" min="50" max="2000">
+                </div>
+                <div class="setting-group">
+                    <label>Preset</label>
+                    <select id="preset">
+                        <option value="">Custom</option>
+                        <option value="glider">Glider</option>
+                        <option value="blinker">Blinker</option>
+                        <option value="beacon">Beacon</option>
+                        <option value="pulsar">Pulsar</option>
+                        <option value="gliderGun">Glider Gun</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="playBtn" class="primary">▶ Play</button>
+                <button id="stepBtn">Step</button>
+                <button id="clearBtn" class="danger">Clear</button>
+                <button id="randomBtn">Random</button>
+            </div>
+            
+            <div class="grid-container">
+                <div id="grid"></div>
+            </div>
+            
+            <div class="stats">
+                <div>Generation: <span id="genCount">0</span></div>
+                <div>Population: <span id="popCount">0</span></div>
+            </div>
+        </div>
+        
+        <div class="output-section">
+            <h2>📋 Coordinates Output</h2>
+            
+            <div class="format-selector">
+                <button class="format-btn active" data-format="list">List</button>
+                <button class="format-btn" data-format="json">JSON</button>
+                <button class="format-btn" data-format="rle">RLE</button>
+                <button class="format-btn" data-format="plaintext">Plaintext</button>
+            </div>
+            
+            <textarea id="output" readonly></textarea>
+            
+            <div class="output-controls">
+                <button id="copyBtn">📋 Copy</button>
+                <button id="downloadBtn">💾 Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let grid = [];
+        let nextGrid = [];
+        let gridSize = 30;
+        let isPlaying = false;
+        let intervalId = null;
+        let generation = 0;
+        let currentFormat = 'list';
+        let isDrawing = false;
+        let drawMode = true;
+        
+        const gridEl = document.getElementById('grid');
+        const playBtn = document.getElementById('playBtn');
+        const stepBtn = document.getElementById('stepBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const randomBtn = document.getElementById('randomBtn');
+        const gridSizeInput = document.getElementById('gridSize');
+        const speedInput = document.getElementById('speed');
+        const presetSelect = document.getElementById('preset');
+        const genCountEl = document.getElementById('genCount');
+        const popCountEl = document.getElementById('popCount');
+        const outputEl = document.getElementById('output');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const formatBtns = document.querySelectorAll('.format-btn');
+        
+        function initGrid() {
+            grid = [];
+            nextGrid = [];
+            for (let y = 0; y < gridSize; y++) {
+                grid[y] = [];
+                nextGrid[y] = [];
+                for (let x = 0; x < gridSize; x++) {
+                    grid[y][x] = false;
+                    nextGrid[y][x] = false;
+                }
+            }
+            generation = 0;
+            updateStats();
+        }
+        
+        function renderGrid() {
+            gridEl.innerHTML = '';
+            gridEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+            
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    if (grid[y][x]) cell.classList.add('alive');
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    
+                    cell.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        isDrawing = true;
+                        drawMode = !grid[y][x];
+                        toggleCell(x, y);
+                    });
+                    
+                    cell.addEventListener('mouseenter', () => {
+                        if (isDrawing) toggleCell(x, y, drawMode);
+                    });
+                    
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+        
+        function toggleCell(x, y, force = null) {
+            if (force !== null) {
+                grid[y][x] = force;
+            } else {
+                grid[y][x] = !grid[y][x];
+            }
+            
+            const cell = gridEl.children[y * gridSize + x];
+            if (grid[y][x]) {
+                cell.classList.add('alive');
+            } else {
+                cell.classList.remove('alive');
+            }
+            
+            updateStats();
+            updateOutput();
+        }
+        
+        function countNeighbors(x, y) {
+            let count = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
+                        if (grid[ny][nx]) count++;
+                    }
+                }
+            }
+            return count;
+        }
+        
+        function step() {
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const neighbors = countNeighbors(x, y);
+                    if (grid[y][x]) {
+                        nextGrid[y][x] = neighbors === 2 || neighbors === 3;
+                    } else {
+                        nextGrid[y][x] = neighbors === 3;
+                    }
+                }
+            }
+            
+            [grid, nextGrid] = [nextGrid, grid];
+            generation++;
+            updateStats();
+            renderGrid();
+            updateOutput();
+        }
+        
+        function updateStats() {
+            let population = 0;
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    if (grid[y][x]) population++;
+                }
+            }
+            genCountEl.textContent = generation;
+            popCountEl.textContent = population;
+        }
+        
+        function getAliveCells() {
+            const cells = [];
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    if (grid[y][x]) cells.push({ x, y });
+                }
+            }
+            return cells;
+        }
+        
+        function updateOutput() {
+            const cells = getAliveCells();
+            let output = '';
+            
+            switch (currentFormat) {
+                case 'list':
+                    output = cells.map(c => `(${c.x}, ${c.y})`).join('\n');
+                    if (output === '') output = 'No alive cells';
+                    break;
+                    
+                case 'json':
+                    output = JSON.stringify({
+                        generation,
+                        gridSize,
+                        cells
+                    }, null, 2);
+                    break;
+                    
+                case 'rle':
+                    if (cells.length === 0) {
+                        output = '#C Empty pattern';
+                    } else {
+                        const minX = Math.min(...cells.map(c => c.x));
+                        const minY = Math.min(...cells.map(c => c.y));
+                        const maxX = Math.max(...cells.map(c => c.x));
+                        const maxY = Math.max(...cells.map(c => c.y));
+                        const width = maxX - minX + 1;
+                        const height = maxY - minY + 1;
+                        
+                        output = `x = ${width}, y = ${height}\n`;
+                        
+                        let rle = '';
+                        for (let y = minY; y <= maxY; y++) {
+                            let run = 0;
+                            let lastState = false;
+                            for (let x = minX; x <= maxX; x++) {
+                                const isAlive = cells.some(c => c.x === x && c.y === y);
+                                if (x === minX) {
+                                    lastState = isAlive;
+                                    run = 1;
+                                } else if (isAlive === lastState) {
+                                    run++;
+                                } else {
+                                    if (run > 1) rle += run;
+                                    rle += lastState ? 'o' : 'b';
+                                    lastState = isAlive;
+                                    run = 1;
+                                }
+                            }
+                            if (run > 1) rle += run;
+                            rle += lastState ? 'o' : 'b';
+                            if (y < maxY) rle += '$';
+                        }
+                        rle += '!';
+                        output += rle;
+                    }
+                    break;
+                    
+                case 'plaintext':
+                    if (cells.length === 0) {
+                        output = '! Empty pattern';
+                    } else {
+                        const minX = Math.min(...cells.map(c => c.x));
+                        const minY = Math.min(...cells.map(c => c.y));
+                        const maxX = Math.max(...cells.map(c => c.x));
+                        const maxY = Math.max(...cells.map(c => c.y));
+                        
+                        output = '! Game of Life Pattern\n';
+                        for (let y = minY; y <= maxY; y++) {
+                            for (let x = minX; x <= maxX; x++) {
+                                output += cells.some(c => c.x === x && c.y === y) ? 'O' : '.';
+                            }
+                            output += '\n';
+                        }
+                    }
+                    break;
+            }
+            
+            outputEl.value = output;
+        }
+        
+        function loadPreset(name) {
+            initGrid();
+            const center = Math.floor(gridSize / 2);
+            const presets = {
+                glider: [[0,1], [1,2], [2,0], [2,1], [2,2]],
+                blinker: [[0,0], [1,0], [2,0]],
+                beacon: [[0,0], [1,0], [0,1], [3,2], [2,3], [3,3]],
+                pulsar: [
+                    [2,0],[3,0],[4,0],[8,0],[9,0],[10,0],
+                    [0,2],[5,2],[7,2],[12,2],
+                    [0,3],[5,3],[7,3],[12,3],
+                    [0,4],[5,4],[7,4],[12,4],
+                    [2,5],[3,5],[4,5],[8,5],[9,5],[10,5],
+                    [2,7],[3,7],[4,7],[8,7],[9,7],[10,7],
+                    [0,8],[5,8],[7,8],[12,8],
+                    [0,9],[5,9],[7,9],[12,9],
+                    [0,10],[5,10],[7,10],[12,10],
+                    [2,12],[3,12],[4,12],[8,12],[9,12],[10,12]
+                ],
+                gliderGun: [
+                    [24,0],[22,1],[24,1],[12,2],[13,2],[20,2],[21,2],[34,2],[35,2],
+                    [11,3],[15,3],[20,3],[21,3],[34,3],[35,3],[0,4],[1,4],[10,4],
+                    [16,4],[20,4],[21,4],[0,5],[1,5],[10,5],[14,5],[16,5],[17,5],
+                    [22,5],[24,5],[10,6],[16,6],[24,6],[11,7],[15,7],[12,8],[13,8]
+                ]
+            };
+            
+            if (presets[name]) {
+                const offset = name === 'pulsar' ? center - 6 : (name === 'gliderGun' ? 5 : center - 2);
+                presets[name].forEach(([x, y]) => {
+                    const nx = x + offset;
+                    const ny = y + offset;
+                    if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
+                        grid[ny][nx] = true;
+                    }
+                });
+            }
+            
+            renderGrid();
+            updateStats();
+            updateOutput();
+        }
+        
+        playBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                playBtn.textContent = '⏸ Pause';
+                playBtn.classList.remove('primary');
+                intervalId = setInterval(step, parseInt(speedInput.value));
+            } else {
+                playBtn.textContent = '▶ Play';
+                playBtn.classList.add('primary');
+                clearInterval(intervalId);
+            }
+        });
+        
+        stepBtn.addEventListener('click', step);
+        
+        clearBtn.addEventListener('click', () => {
+            initGrid();
+            renderGrid();
+            updateOutput();
+        });
+        
+        randomBtn.addEventListener('click', () => {
+            initGrid();
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    grid[y][x] = Math.random() < 0.3;
+                }
+            }
+            renderGrid();
+            updateStats();
+            updateOutput();
+        });
+        
+        gridSizeInput.addEventListener('change', () => {
+            gridSize = Math.max(10, Math.min(80, parseInt(gridSizeInput.value)));
+            gridSizeInput.value = gridSize;
+            initGrid();
+            renderGrid();
+            updateOutput();
+        });
+        
+        speedInput.addEventListener('change', () => {
+            if (isPlaying) {
+                clearInterval(intervalId);
+                intervalId = setInterval(step, parseInt(speedInput.value));
+            }
+        });
+        
+        presetSelect.addEventListener('change', (e) => {
+            if (e.target.value) loadPreset(e.target.value);
+        });
+        
+        formatBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                formatBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFormat = btn.dataset.format;
+                updateOutput();
+            });
+        });
+        
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(outputEl.value);
+                copyBtn.textContent = '✓ Copied!';
+                setTimeout(() => copyBtn.textContent = '📋 Copy', 2000);
+            } catch (err) {
+                outputEl.select();
+                document.execCommand('copy');
+            }
+        });
+        
+        downloadBtn.addEventListener('click', () => {
+            const ext = currentFormat === 'json' ? 'json' : (currentFormat === 'rle' ? 'rle' : 'txt');
+            const blob = new Blob([outputEl.value], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `gol-pattern-${Date.now()}.${ext}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+        
+        initGrid();
+        renderGrid();
+        updateOutput();
+    </script>
+</body>
+</html>
