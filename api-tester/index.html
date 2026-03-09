@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="favicon.svg">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+    <title>API Tester - HTTP Client in Browser</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface-hover: #21262d;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --get: #238636;
+            --post: #8957e5;
+            --put: #9e6a03;
+            --delete: #da3633;
+            --patch: #d29922;
+        }
+        body {
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header h1 span { color: var(--accent); }
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+        .icon-btn {
+            background: var(--surface-hover);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .icon-btn:hover { color: var(--accent); border-color: var(--accent); }
+        
+        .main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 280px 1fr 1fr;
+            gap: 1px;
+            background: var(--border);
+        }
+        @media (max-width: 1200px) {
+            .main { grid-template-columns: 1fr 1fr; }
+            .sidebar { display: none; }
+        }
+        @media (max-width: 900px) {
+            .main { grid-template-columns: 1fr; }
+        }
+        
+        .sidebar {
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 60px);
+        }
+        .sidebar-header {
+            background: var(--surface);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .history-item {
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .history-item:hover { background: var(--surface-hover); }
+        .history-item.active { background: var(--surface-hover); border-left-color: var(--accent); }
+        .history-method {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        .history-method.get { background: rgba(35, 134, 54, 0.2); color: #3fb950; }
+        .history-method.post { background: rgba(137, 87, 229, 0.2); color: #a371f7; }
+        .history-method.put { background: rgba(158, 106, 3, 0.2); color: #d29922; }
+        .history-method.delete { background: rgba(218, 54, 51, 0.2); color: #f85149; }
+        .history-method.patch { background: rgba(210, 153, 34, 0.2); color: #d29922; }
+        .history-url {
+            color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 4px;
+        }
+        .history-time {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            margin-top: 4px;
+        }
+        .clear-history {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .clear-history:hover { color: var(--delete); }
+        
+        .panel {
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-header {
+            background: var(--surface);
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+        }
+        
+        /* Request Panel */
+        .url-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .method-select {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .url-input {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .url-input:focus { outline: none; border-color: var(--accent); }
+        .send-btn {
+            background: var(--accent);
+            color: var(--bg);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .send-btn:hover { background: var(--accent-hover); }
+        .send-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .tab {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 16px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: var(--text); }
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .headers-list { display: flex; flex-direction: column; gap: 8px; }
+        .header-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+        .header-input {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+        }
+        .header-input:focus { outline: none; border-color: var(--accent); }
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .delete-btn:hover { color: var(--delete); background: rgba(218, 54, 51, 0.1); }
+        .add-btn {
+            background: var(--surface-hover);
+            border: 1px dashed var(--border);
+            color: var(--text-secondary);
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85rem;
+            margin-top: 8px;
+            width: 100%;
+        }
+        .add-btn:hover { border-color: var(--accent); color: var(--accent); }
+        
+        .body-editor {
+            width: 100%;
+            min-height: 250px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 16px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        .body-editor:focus { outline: none; border-color: var(--accent); }
+        .body-toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .body-toolbar button {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .body-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+        
+        /* Response Panel */
+        .response-meta {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .meta-item {
+            background: var(--surface);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        .meta-item .label { color: var(--text-secondary); margin-right: 8px; }
+        .meta-item .value { font-weight: 600; }
+        .status-2xx { color: #3fb950; }
+        .status-3xx { color: #d29922; }
+        .status-4xx { color: #f85149; }
+        .status-5xx { color: #f85149; }
+        
+        .response-headers {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .response-headers.active { display: block; }
+        .response-header-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+        .response-header-row:last-child { border-bottom: none; }
+        .response-header-name { color: #7ee787; }
+        .response-header-value { color: var(--text-secondary); word-break: break-all; max-width: 60%; }
+        
+        .response-body {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .response-body pre {
+            padding: 16px;
+            overflow: auto;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-height: 400px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .response-tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+        }
+        .response-tab {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+        .response-tab:hover { color: var(--text); }
+        .response-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+        
+        /* Presets */
+        .presets {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .preset-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+        
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+        }
+        .loading.active { display: flex; }
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* JSON highlighting */
+        .json-key { color: #7ee787; }
+        .json-string { color: #a5d6ff; }
+        .json-number { color: #79c0ff; }
+        .json-boolean { color: #ff7b72; }
+        .json-null { color: #ff7b72; }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 16px; }
+        
+        /* Copy notification */
+        .copy-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: var(--text);
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .copy-toast.show { display: flex; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><span>⚡</span> API Tester</h1>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="saveRequest()">💾 Save</button>
+            <button class="icon-btn" onclick="shareRequest()">🔗 Share</button>
+            <button class="icon-btn" onclick="exportCollection()">📥 Export</button>
+        </div>
+    </div>
+    
+    <div class="main">
+        <!-- Sidebar: History -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                History
+                <span class="clear-history" onclick="clearHistory()">Clear</span>
+            </div>
+            <div class="sidebar-content" id="historyList">
+                <div class="empty-state" style="padding: 40px 20px;">
+                    <div style="font-size: 2rem;">📋</div>
+                    <p style="margin-top: 10px;">No history yet</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Request Panel -->
+        <div class="panel">
+            <div class="panel-header">Request</div>
+            <div class="panel-content">
+                <div class="url-bar">
+                    <select class="method-select" id="method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="HEAD">HEAD</option>
+                        <option value="OPTIONS">OPTIONS</option>
+                    </select>
+                    <input type="text" class="url-input" id="url" placeholder="https://api.example.com/users" 
+                           value="https://jsonplaceholder.typicode.com/posts/1">
+                    <button class="send-btn" id="sendBtn" onclick="sendRequest()">Send</button>
+                </div>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('headers', this)">Headers</button>
+                    <button class="tab" onclick="switchTab('body', this)">Body</button>
+                    <button class="tab" onclick="switchTab('auth', this)">Auth</button>
+                </div>
+                
+                <div class="tab-content active" id="headers-tab">
+                    <div class="headers-list" id="headersList">
+                        <div class="header-row">
+                            <input type="text" class="header-input" placeholder="Content-Type" value="Content-Type">
+                            <input type="text" class="header-input" placeholder="application/json" value="application/json">
+                            <button class="delete-btn" onclick="removeHeader(this)">✕</button>
+                        </div>
+                    </div>
+                    <button class="add-btn" onclick="addHeader()">+ Add Header</button>
+                </div>
+                
+                <div class="tab-content" id="body-tab">
+                    <div class="body-toolbar">
+                        <button onclick="formatJSON()">Format JSON</button>
+                        <button onclick="minifyJSON()">Minify</button>
+                        <button onclick="clearBody()">Clear</button>
+                    </div>
+                    <textarea class="body-editor" id="body" placeholder='{"key": "value"}'>{
+  "title": "foo",
+  "body": "bar",
+  "userId": 1
+}</textarea>
+                </div>
+                
+                <div class="tab-content" id="auth-tab">
+                    <div class="headers-list">
+                        <div class="header-row">
+                            <input type="text" class="header-input" placeholder="Username" id="authUser">
+                            <input type="password" class="header-input" placeholder="Password / Token" id="authPass">
+                            <button class="icon-btn" onclick="applyAuth()">Apply</button>
+                        </div>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 16px;">
+                        Or add Authorization header manually in Headers tab.
+                    </p>
+                </div>
+                
+                <div class="presets">
+                    <button class="preset-btn" onclick="loadPreset('jsonplaceholder')">🧪 JSON Placeholder</button>
+                    <button class="preset-btn" onclick="loadPreset('httpbin')">📦 HTTPBin</button>
+                    <button class="preset-btn" onclick="loadPreset('github')">🐙 GitHub</button>
+                    <button class="preset-btn" onclick="loadPreset('reqres')">👤 ReqRes</button>
+                    <button class="preset-btn" onclick="loadPreset('pokeapi')">⚡ PokeAPI</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Response Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                Response
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <span>Sending...</span>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="response-meta" id="responseMeta" style="display: none;">
+                    <div class="meta-item">
+                        <span class="label">Status:</span>
+                        <span class="value" id="statusCode">200</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="label">Time:</span>
+                        <span class="value" id="responseTime">0ms</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="label">Size:</span>
+                        <span class="value" id="responseSize">0 B</span>
+                    </div>
+                </div>
+                
+                <div class="response-tabs">
+                    <button class="response-tab active" onclick="switchResponseTab('body', this)">Body</button>
+                    <button class="response-tab" onclick="switchResponseTab('headers', this)">Headers</button>
+                </div>
+                
+                <div class="response-headers" id="responseHeaders"></div>
+                
+                <div class="response-body" id="responseBody" style="display: none;">
+                    <pre id="responseContent"></pre>
+                </div>
+                
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-state-icon">📡</div>
+                    <p>Send a request to see the response</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="copy-toast" id="copyToast">✅ Copied to clipboard!</div>
+
+    <script>
+        // History management
+        let requestHistory = [];
+        try {
+            requestHistory = JSON.parse(localStorage.getItem('apiTesterHistory') || '[]');
+        } catch (e) {
+            console.warn('localStorage not available:', e);
+            requestHistory = [];
+        }
+        let currentResponseHeaders = {};
+        
+        const presets = {
+            jsonplaceholder: {
+                url: 'https://jsonplaceholder.typicode.com/posts',
+                method: 'GET',
+                body: ''
+            },
+            httpbin: {
+                url: 'https://httpbin.org/get',
+                method: 'GET',
+                body: ''
+            },
+            github: {
+                url: 'https://api.github.com/users/github',
+                method: 'GET',
+                body: ''
+            },
+            reqres: {
+                url: 'https://reqres.in/api/users/2',
+                method: 'GET',
+                body: ''
+            },
+            pokeapi: {
+                url: 'https://pokeapi.co/api/v2/pokemon/pikachu',
+                method: 'GET',
+                body: ''
+            }
+        };
+        
+        // Initialize
+        renderHistory();
+        
+        // Tab switching
+        function switchTab(tab, clickedTab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            clickedTab.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+
+        function switchResponseTab(tab, clickedTab) {
+            document.querySelectorAll('.response-tab').forEach(t => t.classList.remove('active'));
+            clickedTab.classList.add('active');
+            
+            if (tab === 'body') {
+                document.getElementById('responseBody').style.display = 'block';
+                document.getElementById('responseHeaders').classList.remove('active');
+            } else {
+                document.getElementById('responseBody').style.display = 'none';
+                document.getElementById('responseHeaders').classList.add('active');
+            }
+        }
+        
+        // Headers
+        function addHeader() {
+            const row = document.createElement('div');
+            row.className = 'header-row';
+            row.innerHTML = `
+                <input type="text" class="header-input" placeholder="Header">
+                <input type="text" class="header-input" placeholder="Value">
+                <button class="delete-btn" onclick="removeHeader(this)">✕</button>
+            `;
+            document.getElementById('headersList').appendChild(row);
+        }
+        
+        function removeHeader(btn) {
+            btn.parentElement.remove();
+        }
+        
+        // Auth
+        function applyAuth() {
+            const user = document.getElementById('authUser').value;
+            const pass = document.getElementById('authPass').value;
+            if (!user && !pass) return;
+            
+            const token = btoa(user + ':' + pass);
+            
+            // Check if Authorization header exists
+            const rows = document.querySelectorAll('.header-row');
+            let found = false;
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs[0].value.toLowerCase() === 'authorization') {
+                    inputs[1].value = 'Basic ' + token;
+                    found = true;
+                }
+            });
+            
+            if (!found) {
+                const row = document.createElement('div');
+                row.className = 'header-row';
+                row.innerHTML = `
+                    <input type="text" class="header-input" value="Authorization">
+                    <input type="text" class="header-input" value="Basic ${token}">
+                    <button class="delete-btn" onclick="removeHeader(this)">✕</button>
+                `;
+                document.getElementById('headersList').appendChild(row);
+            }
+            
+            showToast('Authorization header added');
+        }
+        
+        // Body helpers
+        function formatJSON() {
+            const body = document.getElementById('body');
+            try {
+                const obj = JSON.parse(body.value);
+                body.value = JSON.stringify(obj, null, 2);
+            } catch (e) {
+                showToast('Invalid JSON');
+            }
+        }
+        
+        function minifyJSON() {
+            const body = document.getElementById('body');
+            try {
+                const obj = JSON.parse(body.value);
+                body.value = JSON.stringify(obj);
+            } catch (e) {
+                showToast('Invalid JSON');
+            }
+        }
+        
+        function clearBody() {
+            document.getElementById('body').value = '';
+        }
+        
+        // Presets
+        function loadPreset(name) {
+            const p = presets[name];
+            document.getElementById('url').value = p.url;
+            document.getElementById('method').value = p.method;
+            document.getElementById('body').value = p.body;
+        }
+        
+        // Request
+        async function sendRequest() {
+            const url = document.getElementById('url').value;
+            const method = document.getElementById('method').value;
+            const body = document.getElementById('body').value;
+            
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+            
+            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('responseMeta').style.display = 'none';
+            document.getElementById('responseBody').style.display = 'none';
+            
+            const startTime = performance.now();
+            
+            try {
+                const headers = {};
+                document.querySelectorAll('#headersList .header-row').forEach(row => {
+                    const inputs = row.querySelectorAll('input');
+                    if (inputs[0].value) {
+                        headers[inputs[0].value] = inputs[1].value;
+                    }
+                });
+                
+                const options = {
+                    method: method,
+                    headers: headers
+                };
+                
+                if (['POST', 'PUT', 'PATCH'].includes(method) && body) {
+                    options.body = body;
+                }
+                
+                const response = await fetch(url, options);
+                const responseText = await response.text();
+                const endTime = performance.now();
+                
+                // Store response headers
+                currentResponseHeaders = {};
+                response.headers.forEach((value, key) => {
+                    currentResponseHeaders[key] = value;
+                });
+                
+                // Display
+                document.getElementById('statusCode').textContent = `${response.status} ${response.statusText}`;
+                document.getElementById('statusCode').className = 'value ' + getStatusClass(response.status);
+                document.getElementById('responseTime').textContent = Math.round(endTime - startTime) + 'ms';
+                document.getElementById('responseSize').textContent = formatSize(new Blob([responseText]).size);
+                
+                // Format response
+                let formatted = responseText;
+                try {
+                    const json = JSON.parse(responseText);
+                    formatted = syntaxHighlight(JSON.stringify(json, null, 2));
+                } catch {
+                    formatted = escapeHtml(responseText);
+                }
+                
+                document.getElementById('responseContent').innerHTML = formatted;
+                document.getElementById('responseMeta').style.display = 'flex';
+                document.getElementById('responseBody').style.display = 'block';
+                
+                // Render headers
+                renderResponseHeaders();
+                
+                // Add to history
+                addToHistory(method, url, response.status);
+                
+            } catch (error) {
+                document.getElementById('statusCode').textContent = 'Error';
+                document.getElementById('statusCode').className = 'value status-5xx';
+                document.getElementById('responseContent').textContent = error.message;
+                document.getElementById('responseMeta').style.display = 'flex';
+                document.getElementById('responseBody').style.display = 'block';
+            } finally {
+                document.getElementById('sendBtn').disabled = false;
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+        
+        function renderResponseHeaders() {
+            const container = document.getElementById('responseHeaders');
+            container.innerHTML = '';
+            
+            Object.entries(currentResponseHeaders).forEach(([key, value]) => {
+                const row = document.createElement('div');
+                row.className = 'response-header-row';
+                row.innerHTML = `
+                    <span class="response-header-name">${escapeHtml(key)}</span>
+                    <span class="response-header-value">${escapeHtml(value)}</span>
+                `;
+                container.appendChild(row);
+            });
+        }
+        
+        // History
+        function addToHistory(method, url, status) {
+            const entry = {
+                method,
+                url,
+                status,
+                time: Date.now()
+            };
+            
+            // Add to beginning, limit to 50
+            requestHistory.unshift(entry);
+            if (requestHistory.length > 50) requestHistory.pop();
+            
+            try {
+                localStorage.setItem('apiTesterHistory', JSON.stringify(requestHistory));
+            } catch (e) {
+                console.warn('localStorage not available:', e);
+            }
+            renderHistory();
+        }
+        
+        function renderHistory() {
+            const container = document.getElementById('historyList');
+            
+            if (requestHistory.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="padding: 40px 20px;">
+                        <div style="font-size: 2rem;">📋</div>
+                        <p style="margin-top: 10px;">No history yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            requestHistory.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'history-item';
+                el.onclick = () => loadFromHistory(index);
+                el.innerHTML = `
+                    <span class="history-method ${item.method.toLowerCase()}">${item.method}</span>
+                    <div class="history-url">${item.url}</div>
+                    <div class="history-time">${new Date(item.time).toLocaleString()}</div>
+                `;
+                container.appendChild(el);
+            });
+        }
+        
+        function loadFromHistory(index) {
+            const item = requestHistory[index];
+            document.getElementById('url').value = item.url;
+            document.getElementById('method').value = item.method;
+        }
+        
+        function clearHistory() {
+            requestHistory = [];
+            try {
+                localStorage.removeItem('apiTesterHistory');
+            } catch (e) {
+                console.warn('localStorage not available:', e);
+            }
+            renderHistory();
+        }
+        
+        // Actions
+        function saveRequest() {
+            const data = {
+                url: document.getElementById('url').value,
+                method: document.getElementById('method').value,
+                body: document.getElementById('body').value
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'api-request.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function shareRequest() {
+            const data = {
+                url: document.getElementById('url').value,
+                method: document.getElementById('method').value,
+                body: document.getElementById('body').value
+            };
+            
+            const json = JSON.stringify(data);
+            const base64 = btoa(json);
+            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${base64}`;
+            
+            navigator.clipboard.writeText(shareUrl);
+            showToast('Share URL copied to clipboard!');
+        }
+        
+        function exportCollection() {
+            const blob = new Blob([JSON.stringify(requestHistory, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'api-history.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('copyToast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        // Helpers
+        function getStatusClass(status) {
+            if (status >= 200 && status < 300) return 'status-2xx';
+            if (status >= 300 && status < 400) return 'status-3xx';
+            if (status >= 400 && status < 500) return 'status-4xx';
+            return 'status-5xx';
+        }
+        
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function syntaxHighlight(json) {
+            return json.replace(/(".*?")(?=:)/g, '<span class="json-key">$1</span>')
+                .replace(/(".*?")/g, '<span class="json-string">$1</span>')
+                .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
+                .replace(/\b(null)\b/g, '<span class="json-null">$1</span>')
+                .replace(/\b(\d+)\b/g, '<span class="json-number">$1</span>');
+        }
+        
+        // Load shared request
+        const urlParams = new URLSearchParams(window.location.search);
+        const shareData = urlParams.get('share');
+        if (shareData) {
+            try {
+                const data = JSON.parse(atob(shareData));
+                document.getElementById('url').value = data.url || '';
+                document.getElementById('method').value = data.method || 'GET';
+                document.getElementById('body').value = data.body || '';
+            } catch (e) {
+                console.error('Failed to load shared request');
+            }
+        }
+        
+        // Enter to send
+        document.getElementById('url').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendRequest();
+        });
+    </script>
+    
+    <footer style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: auto;">
+        Built with ❤️ by QQ & <a href="https://qqshi13.github.io/nova/" target="_blank">Nova ☄️</a>
+    </footer>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
