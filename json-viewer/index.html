@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d1117">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%F0%9F%8C%B3%3C/text%3E%3C/svg%3E">
+    <title>JSON Visualizer - Interactive JSON Viewer</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230d1117' rx='20'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🌳%3C/text%3E%3C/svg%3E">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface-hover: #21262d;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --success: #238636;
+            --error: #da3633;
+            --string: #a5d6ff;
+            --number: #79c0ff;
+            --boolean: #ff7b72;
+            --null: #ff7b72;
+            --key: #7ee787;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        h1 { font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .toolbar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        button {
+            background: var(--surface-hover);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        button:hover { background: var(--border); }
+        button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+        button.primary:hover { opacity: 0.9; }
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 300px;
+        }
+        .panel-header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .panel-body {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+        textarea {
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            border: none;
+            color: var(--text);
+            padding: 1rem;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+        }
+        .json-tree {
+            padding: 1rem;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .json-node { margin-left: 1.5rem; }
+        .json-key {
+            color: var(--key);
+            cursor: pointer;
+            user-select: none;
+        }
+        .json-key:hover { text-decoration: underline; }
+        .json-string { color: var(--string); }
+        .json-number { color: var(--number); }
+        .json-boolean { color: var(--boolean); }
+        .json-null { color: var(--null); }
+        .toggle-btn {
+            display: inline-block;
+            width: 12px;
+            text-align: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            margin-right: 4px;
+        }
+        .toggle-btn:hover { color: var(--text); }
+        .collapsed::after { content: '…'; color: var(--text-secondary); }
+        .error-bar {
+            background: var(--error);
+            color: white;
+            padding: 0.75rem 1rem;
+            display: none;
+        }
+        .error-bar.show { display: block; }
+        .stats {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+        }
+        .stat { color: var(--text-secondary); }
+        .stat span { color: var(--text); font-weight: 600; }
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .panel { min-height: 300px; }
+        }
+        footer {
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding: 0.75rem 1rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+        }
+        footer a:hover {
+            border-bottom-color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌳 JSON Visualizer</h1>
+        <div class="toolbar">
+            <button onclick="formatJSON()">Format</button>
+            <button onclick="minifyJSON()">Minify</button>
+            <button onclick="expandAll()">Expand All</button>
+            <button onclick="collapseAll()">Collapse All</button>
+            <button class="primary" onclick="copyJSON()">Copy</button>
+            <button onclick="clearJSON()">Clear</button>
+        </div>
+    </header>
+    <div class="error-bar" id="errorBar"></div>
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <span>Input (JSON)</span>
+                <div class="stats">
+                    <div class="stat">Size: <span id="byteSize">0 B</span></div>
+                </div>
+            </div>
+            <div class="panel-body">
+                <textarea id="input" placeholder='Paste JSON here...&#10;Example: {&quot;name&quot;: &quot;John&quot;, &quot;age&quot;: 30}' spellcheck="false"></textarea>
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header">
+                <span>Visual Tree</span>
+                <div class="stats">
+                    <div class="stat">Nodes: <span id="nodeCount">0</span></div>
+                    <div class="stat">Depth: <span id="maxDepth">0</span></div>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="json-tree" id="tree"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('input');
+        const tree = document.getElementById('tree');
+        const errorBar = document.getElementById('errorBar');
+        let parsedData = null;
+
+        input.addEventListener('input', debounce(parseJSON, 300));
+
+        function debounce(fn, ms) {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => fn(...args), ms);
+            };
+        }
+
+        function parseJSON() {
+            nodeIdCounter = 0; // Reset counter for each render
+            const text = input.value.trim();
+            if (!text) {
+                tree.innerHTML = '';
+                hideError();
+                updateStats(0, 0, 0);
+                return;
+            }
+
+            try {
+                parsedData = JSON.parse(text);
+                hideError();
+                tree.innerHTML = renderTree(parsedData);
+                updateStats(text.length, countNodes(parsedData), getMaxDepth(parsedData));
+            } catch (e) {
+                showError(e.message);
+                tree.innerHTML = '<span style="color: var(--text-secondary)">Invalid JSON</span>';
+            }
+        }
+
+        let nodeIdCounter = 0;
+
+        function renderTree(data, key = null, isLast = true, path = '') {
+            if (data === null) return `<span class="json-null">null</span>${isLast ? '' : ','}`;
+            if (typeof data === 'boolean') return `<span class="json-boolean">${data}</span>${isLast ? '' : ','}`;
+            if (typeof data === 'number') return `<span class="json-number">${data}</span>${isLast ? '' : ','}`;
+            if (typeof data === 'string') return `<span class="json-string">"${escapeHtml(data)}"</span>${isLast ? '' : ','}`;
+
+            if (Array.isArray(data)) {
+                if (data.length === 0) return `[]${isLast ? '' : ','}`;
+                const currentPath = path || `n${nodeIdCounter++}`;
+                const safePath = escapePath(currentPath);
+                let html = `<span class="toggle-btn" onclick="toggleNode('${safePath}')">▼</span>[<span class="json-number">${data.length}</span>]\n`;
+                html += `<div class="json-node" id="node-${safePath}">`;
+                data.forEach((item, i) => {
+                    html += renderTree(item, null, i === data.length - 1, `${currentPath}[${i}]`);
+                    if (i < data.length - 1) html += '\n';
+                });
+                html += '</div>';
+                return html + (isLast ? '' : ',');
+            }
+
+            const keys = Object.keys(data);
+            if (keys.length === 0) return `{}${isLast ? '' : ','}`;
+            const currentPath = path || `n${nodeIdCounter++}`;
+            const safePath = escapePath(currentPath);
+            let html = `<span class="toggle-btn" onclick="toggleNode('${safePath}')">▼</span>{<span class="json-number">${keys.length}</span>}\n`;
+            html += `<div class="json-node" id="node-${safePath}">`;
+            keys.forEach((k, i) => {
+                html += `<span class="json-key">"${escapeHtml(k)}"</span>: ${renderTree(data[k], k, i === keys.length - 1, `${currentPath}.${k}`)}`;
+                if (i < keys.length - 1) html += '\n';
+            });
+            html += '</div>';
+            return html + (isLast ? '' : ',');
+        }
+
+        function toggleNode(path) {
+            const node = document.getElementById(`node-${path}`);
+            const btn = node.previousElementSibling;
+            if (node.style.display === 'none') {
+                node.style.display = 'block';
+                btn.textContent = '▼';
+                btn.classList.remove('collapsed');
+            } else {
+                node.style.display = 'none';
+                btn.textContent = '▶';
+                btn.classList.add('collapsed');
+            }
+        }
+
+        function expandAll() {
+            document.querySelectorAll('.json-node').forEach(n => n.style.display = 'block');
+            document.querySelectorAll('.toggle-btn').forEach(b => {
+                b.textContent = '▼';
+                b.classList.remove('collapsed');
+            });
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.json-node').forEach(n => n.style.display = 'none');
+            document.querySelectorAll('.toggle-btn').forEach(b => {
+                b.textContent = '▶';
+                b.classList.add('collapsed');
+            });
+        }
+
+        function formatJSON() {
+            try {
+                const obj = JSON.parse(input.value);
+                input.value = JSON.stringify(obj, null, 2);
+                parseJSON();
+            } catch (e) {
+                showError(e.message);
+            }
+        }
+
+        function minifyJSON() {
+            try {
+                const obj = JSON.parse(input.value);
+                input.value = JSON.stringify(obj);
+                parseJSON();
+            } catch (e) {
+                showError(e.message);
+            }
+        }
+
+        function copyJSON() {
+            input.select();
+            document.execCommand('copy');
+            const btn = document.querySelector('button.primary');
+            const original = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = original, 1500);
+        }
+
+        function clearJSON() {
+            input.value = '';
+            tree.innerHTML = '';
+            parsedData = null;
+            hideError();
+            updateStats(0, 0, 0);
+        }
+
+        function showError(msg) {
+            errorBar.textContent = `❌ ${msg}`;
+            errorBar.classList.add('show');
+        }
+
+        function hideError() {
+            errorBar.classList.remove('show');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function escapePath(id) {
+            return id.replace(/[^a-zA-Z0-9-_]/g, '_');
+        }
+
+        function countNodes(data) {
+            if (data === null || typeof data !== 'object') return 1;
+            if (Array.isArray(data)) return data.reduce((sum, item) => sum + countNodes(item), 1);
+            return Object.values(data).reduce((sum, val) => sum + countNodes(val), 1);
+        }
+
+        function getMaxDepth(data, depth = 0) {
+            if (data === null || typeof data !== 'object') return depth;
+            if (Array.isArray(data)) {
+                if (data.length === 0) return depth;
+                return Math.max(...data.map(item => getMaxDepth(item, depth + 1)));
+            }
+            const values = Object.values(data);
+            if (values.length === 0) return depth;
+            return Math.max(...values.map(val => getMaxDepth(val, depth + 1)));
+        }
+
+        function updateStats(bytes, nodes, depth) {
+            document.getElementById('byteSize').textContent = formatBytes(bytes);
+            document.getElementById('nodeCount').textContent = nodes;
+            document.getElementById('maxDepth').textContent = depth;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Sample data on first load
+        input.value = JSON.stringify({
+            name: "John Doe",
+            age: 30,
+            isActive: true,
+            balance: null,
+            address: {
+                street: "123 Main St",
+                city: "New York",
+                coordinates: {
+                    lat: 40.7128,
+                    lng: -74.0060
+                }
+            },
+            hobbies: ["coding", "gaming", "reading"],
+            projects: [
+                { name: "Flow", stars: 5 },
+                { name: "DropTransfer", stars: 3 }
+            ]
+        }, null, 2);
+        parseJSON();
+    </script>
+    <footer>Built with ❤️ by QQ & <a href="https://qqshi13.github.io/nova/" target="_blank">Nova ☄️</a></footer>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</body>
+</html>
