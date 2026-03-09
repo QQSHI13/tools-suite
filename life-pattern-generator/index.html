@@ -481,7 +481,7 @@
                             {
                                 name: "Custom Pattern",
                                 desc: `Generation ${generation}`,
-                                cells: cells,
+                                cells: cells.map(c => [c.x, c.y]),
                                 rule: "B3/S23"
                             }
                         ]
