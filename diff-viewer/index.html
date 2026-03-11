@@ -4,64 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d1117">
+    <meta name="description" content="A clean, browser-based diff tool for comparing text and code side by side">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%F0%9F%93%91%3C/text%3E%3C/svg%3E">
     <title>Diff Viewer</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🔍 Diff Viewer</h1>
-            <p class="subtitle">Compare text and code side by side · by <a href="https://qqshi13.github.io/nova/" target="_blank">Nova ☄️</a></p>
+            <p class="subtitle">Compare text and code side by side · by <a href="https://qqshi13.github.io/nova/" target="_blank" rel="noopener">Nova ☄️</a></p>
         </header>
 
-        <div class="toolbar">
-            <div class="view-modes">
-                <button id="btn-split" class="active">Split</button>
-                <button id="btn-inline">Inline</button>
+        <nav class="toolbar" role="toolbar" aria-label="Diff viewer controls">
+            <div class="view-modes" role="group" aria-label="View modes">
+                <button id="btn-split" class="active" aria-pressed="true" aria-label="Split view">Split</button>
+                <button id="btn-inline" aria-pressed="false" aria-label="Inline view">Inline</button>
             </div>
-            <div class="actions">
-                <button id="btn-swap">⇄ Swap</button>
-                <button id="btn-clear">Clear</button>
-                <button id="btn-copy">Copy Result</button>
+            <div class="actions" role="group" aria-label="Actions">
+                <button id="btn-swap" aria-label="Swap inputs">⇄ Swap</button>
+                <button id="btn-clear" aria-label="Clear all inputs">Clear</button>
+                <button id="btn-copy" aria-label="Copy diff result">Copy Result</button>
+                <button id="btn-export" aria-label="Export as patch file">Export Patch</button>
             </div>
-        </div>
+        </nav>
 
-        <div class="input-section">
+        <section class="options" aria-label="Diff options">
+            <label class="option-toggle">
+                <input type="checkbox" id="opt-word-level" aria-label="Enable word-level diff">
+                <span>Word-level diff</span>
+            </label>
+            <label class="option-toggle">
+                <input type="checkbox" id="opt-ignore-whitespace" aria-label="Ignore whitespace differences">
+                <span>Ignore whitespace</span>
+            </label>
+        </section>
+
+        <section class="input-section" aria-label="Input sections">
             <div class="input-pane">
                 <div class="input-header">
-                    <label>Original</label>
-                    <button class="btn-paste" data-target="original">Paste</button>
+                    <label for="original">Original</label>
+                    <button class="btn-paste" data-target="original" aria-label="Paste into original">Paste</button>
                 </div>
-                <textarea id="original" placeholder="Paste original text here..."></textarea>
+                <textarea 
+                    id="original" 
+                    placeholder="Paste original text here..."
+                    aria-label="Original text input"
+                    spellcheck="false"
+                    autocomplete="off"
+                    autocapitalize="off"
+                ></textarea>
             </div>
             <div class="input-pane">
                 <div class="input-header">
-                    <label>Modified</label>
-                    <button class="btn-paste" data-target="modified">Paste</button>
+                    <label for="modified">Modified</label>
+                    <button class="btn-paste" data-target="modified" aria-label="Paste into modified">Paste</button>
                 </div>
-                <textarea id="modified" placeholder="Paste modified text here..."></textarea>
+                <textarea 
+                    id="modified" 
+                    placeholder="Paste modified text here..."
+                    aria-label="Modified text input"
+                    spellcheck="false"
+                    autocomplete="off"
+                    autocapitalize="off"
+                ></textarea>
             </div>
-        </div>
+        </section>
 
-        <div class="stats" id="stats">
-            <span id="added-count">+0 added</span>
-            <span id="removed-count">−0 removed</span>
-            <span id="unchanged-count">0 unchanged</span>
-        </div>
+        <section class="stats" id="stats" aria-label="Diff statistics">
+            <span id="added-count" aria-label="0 lines added">+0 added</span>
+            <span id="removed-count" aria-label="0 lines removed">−0 removed</span>
+            <span id="unchanged-count" aria-label="0 lines unchanged">0 unchanged</span>
+        </section>
 
-        <div class="diff-output" id="diff-output">
+        <main class="diff-output" id="diff-output" role="region" aria-label="Diff output" aria-live="polite" aria-busy="false">
             <div class="diff-placeholder">
                 Enter text in both fields to see the diff
             </div>
-        </div>
+        </main>
     </div>
 
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <script src="../shared/utils.js"></script>
     <script src="diff.js"></script>
     <script src="app.js"></script>
     <script>

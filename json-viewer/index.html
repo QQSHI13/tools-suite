@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0d1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%F0%9F%8C%B3%3C/text%3E%3C/svg%3E">
     <title>JSON Visualizer - Interactive JSON Viewer</title>
@@ -206,25 +208,29 @@
         </div>
     </div>
 
+    <script src="../shared/utils.js"></script>
     <script>
         const input = document.getElementById('input');
         const tree = document.getElementById('tree');
         const errorBar = document.getElementById('errorBar');
         let parsedData = null;
 
-        input.addEventListener('input', debounce(parseJSON, 300));
+        input.addEventListener('input', Utils.debounce(parseJSON, 300));
 
-        function debounce(fn, ms) {
-            let timeout;
-            return (...args) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => fn(...args), ms);
-            };
-        }
+        const MAX_INPUT_SIZE = 10 * 1024 * 1024; // 10MB limit
 
         function parseJSON() {
             nodeIdCounter = 0; // Reset counter for each render
             const text = input.value.trim();
+            
+            // Check input size limit
+            const byteSize = new Blob([text]).size;
+            if (byteSize > MAX_INPUT_SIZE) {
+                showError(`Input too large: ${Utils.formatBytes(byteSize)} exceeds maximum of 10MB`);
+                tree.innerHTML = '<span style="color: var(--text-secondary)">Input too large</span>';
+                return;
+            }
+            
             if (!text) {
                 tree.innerHTML = '';
                 hideError();
@@ -249,7 +255,7 @@
             if (data === null) return `<span class="json-null">null</span>${isLast ? '' : ','}`;
             if (typeof data === 'boolean') return `<span class="json-boolean">${data}</span>${isLast ? '' : ','}`;
             if (typeof data === 'number') return `<span class="json-number">${data}</span>${isLast ? '' : ','}`;
-            if (typeof data === 'string') return `<span class="json-string">"${escapeHtml(data)}"</span>${isLast ? '' : ','}`;
+            if (typeof data === 'string') return `<span class="json-string">"${Utils.escapeHtml(data)}"</span>${isLast ? '' : ','}`;
 
             if (Array.isArray(data)) {
                 if (data.length === 0) return `[]${isLast ? '' : ','}`;
@@ -272,7 +278,7 @@
             let html = `<span class="toggle-btn" onclick="toggleNode('${safePath}')">▼</span>{<span class="json-number">${keys.length}</span>}\n`;
             html += `<div class="json-node" id="node-${safePath}">`;
             keys.forEach((k, i) => {
-                html += `<span class="json-key">"${escapeHtml(k)}"</span>: ${renderTree(data[k], k, i === keys.length - 1, `${currentPath}.${k}`)}`;
+                html += `<span class="json-key">"${Utils.escapeHtml(k)}"</span>: ${renderTree(data[k], k, i === keys.length - 1, `${currentPath}.${k}`)}`;
                 if (i < keys.length - 1) html += '\n';
             });
             html += '</div>';
@@ -329,13 +335,22 @@
             }
         }
 
-        function copyJSON() {
-            input.select();
-            document.execCommand('copy');
-            const btn = document.querySelector('button.primary');
-            const original = btn.textContent;
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = original, 1500);
+        async function copyJSON() {
+            try {
+                await navigator.clipboard.writeText(input.value);
+                const btn = document.querySelector('button.primary');
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = original, 1500);
+            } catch (err) {
+                // Fallback for browsers without clipboard API support
+                input.select();
+                document.execCommand('copy');
+                const btn = document.querySelector('button.primary');
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = original, 1500);
+            }
         }
 
         function clearJSON() {
@@ -355,11 +370,7 @@
             errorBar.classList.remove('show');
         }
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+
 
         function escapePath(id) {
             return id.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -371,15 +382,44 @@
             return Object.values(data).reduce((sum, val) => sum + countNodes(val), 1);
         }
 
-        function getMaxDepth(data, depth = 0) {
-            if (data === null || typeof data !== 'object') return depth;
-            if (Array.isArray(data)) {
-                if (data.length === 0) return depth;
-                return Math.max(...data.map(item => getMaxDepth(item, depth + 1)));
+        function getMaxDepth(data) {
+            // Iterative approach to avoid stack overflow with large/deep objects
+            let maxDepth = 0;
+            const stack = [{ data: data, depth: 0 }];
+            
+            while (stack.length > 0) {
+                const { data: current, depth } = stack.pop();
+                
+                if (current === null || typeof current !== 'object') {
+                    maxDepth = Math.max(maxDepth, depth);
+                    continue;
+                }
+                
+                // Count this object/array as a level
+                const currentDepth = depth + 1;
+                maxDepth = Math.max(maxDepth, currentDepth - 1);
+                
+                if (Array.isArray(current)) {
+                    if (current.length === 0) {
+                        maxDepth = Math.max(maxDepth, depth);
+                    } else {
+                        for (let i = 0; i < current.length; i++) {
+                            stack.push({ data: current[i], depth: currentDepth });
+                        }
+                    }
+                } else {
+                    const values = Object.values(current);
+                    if (values.length === 0) {
+                        maxDepth = Math.max(maxDepth, depth);
+                    } else {
+                        for (let i = 0; i < values.length; i++) {
+                            stack.push({ data: values[i], depth: currentDepth });
+                        }
+                    }
+                }
             }
-            const values = Object.values(data);
-            if (values.length === 0) return depth;
-            return Math.max(...values.map(val => getMaxDepth(val, depth + 1)));
+            
+            return maxDepth;
         }
 
         function updateStats(bytes, nodes, depth) {
@@ -388,12 +428,13 @@
             document.getElementById('maxDepth').textContent = depth;
         }
 
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+
+        // Update stats uses Utils.formatBytes
+        function updateStats(bytes, nodes, depth) {
+            document.getElementById('byteSize').textContent = Utils.formatBytes(bytes);
+            document.getElementById('nodeCount').textContent = nodes;
+            document.getElementById('maxDepth').textContent = depth;
         }
 
         // Sample data on first load

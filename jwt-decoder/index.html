@@ -220,6 +220,7 @@
     
     <footer>Built with ❤️ by QQ & <a href="https://qqshi13.github.io/nova/" target="_blank">Nova ☄️</a></footer>
 
+    <script src="../shared/utils.js"></script>
     <script>
         const samples = {
             simple: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE4OTM0NTYwMDB9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ',
@@ -232,7 +233,7 @@
         const jwtOutput = document.getElementById('jwtOutput');
         const errorBar = document.getElementById('errorBar');
 
-        jwtInput.addEventListener('input', debounce(decodeJWT, 300));
+        jwtInput.addEventListener('input', Utils.debounce(decodeJWT, 300));
         
         jwtInput.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'Enter') {
@@ -240,13 +241,7 @@
             }
         });
 
-        function debounce(fn, ms) {
-            let timeout;
-            return (...args) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => fn(...args), ms);
-            };
-        }
+
 
         function decodeJWT() {
             const token = jwtInput.value.trim();
@@ -351,7 +346,7 @@
             hideError();
         }
 
-        function copyPayload() {
+        async function copyPayload() {
             const token = jwtInput.value.trim();
             if (!token) {
                 showError('No JWT token to copy');
@@ -364,21 +359,18 @@
                 return;
             }
             
-            if (!navigator.clipboard) {
-                showError('Clipboard not available. Ensure you are on a secure (HTTPS) connection.');
-                return;
-            }
-            
             try {
                 const payload = JSON.parse(base64UrlDecode(parts[1]));
-                navigator.clipboard.writeText(JSON.stringify(payload, null, 2)).then(() => {
-                    const btn = document.querySelector('button.primary');
-                    const original = btn.textContent;
-                    btn.textContent = 'Copied!';
-                    setTimeout(() => btn.textContent = original, 1500);
-                }).catch(() => {
+                const success = await Utils.copyToClipboard(JSON.stringify(payload, null, 2));
+                
+                const btn = document.querySelector('button.primary');
+                const original = btn.textContent;
+                btn.textContent = success ? 'Copied!' : 'Failed!';
+                setTimeout(() => btn.textContent = original, 1500);
+                
+                if (!success) {
                     showError('Failed to copy to clipboard');
-                });
+                }
             } catch (e) {
                 showError('Failed to decode payload for copying');
             }

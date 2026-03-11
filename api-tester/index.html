@@ -25,6 +25,21 @@
             --delete: #da3633;
             --patch: #d29922;
         }
+        :root.light-mode {
+            --bg: #ffffff;
+            --surface: #f6f8fa;
+            --surface-hover: #f3f4f6;
+            --border: #d0d7de;
+            --text: #24292f;
+            --text-secondary: #57606a;
+            --accent: #0969da;
+            --accent-hover: #0550ae;
+            --get: #1a7f37;
+            --post: #8250df;
+            --put: #9e6a03;
+            --delete: #cf222e;
+            --patch: #bf8700;
+        }
         body {
             font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
             background: var(--bg);
@@ -197,9 +212,18 @@
             font-size: 0.9rem;
         }
         .url-input:focus { outline: none; border-color: var(--accent); }
+        .url-input.error { border-color: var(--delete); }
+        .url-error {
+            color: var(--delete);
+            font-size: 0.8rem;
+            margin-top: -12px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .url-error.show { display: block; }
         .send-btn {
             background: var(--accent);
-            color: var(--bg);
+            color: #fff;
             border: none;
             padding: 10px 24px;
             border-radius: 6px;
@@ -276,6 +300,43 @@
         }
         .add-btn:hover { border-color: var(--accent); color: var(--accent); }
         
+        /* Query Params */
+        .query-params-section {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        .query-params-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .query-params-title {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .query-toggle {
+            font-size: 0.75rem;
+            color: var(--accent);
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: inherit;
+        }
+        .query-toggle:hover { text-decoration: underline; }
+        .query-params-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .query-param-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+        
         .body-editor {
             width: 100%;
             min-height: 250px;
@@ -305,6 +366,16 @@
             cursor: pointer;
         }
         .body-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+        
+        /* Auth */
+        .auth-notice {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-top: 16px;
+            padding: 12px;
+            background: var(--surface);
+            border-radius: 6px;
+        }
         
         /* Response Panel */
         .response-meta {
@@ -344,6 +415,7 @@
         }
         .response-header-row:last-child { border-bottom: none; }
         .response-header-name { color: #7ee787; }
+        :root.light-mode .response-header-name { color: #1a7f37; }
         .response-header-value { color: var(--text-secondary); word-break: break-all; max-width: 60%; }
         
         .response-body {
@@ -379,6 +451,23 @@
         }
         .response-tab:hover { color: var(--text); }
         .response-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+        
+        /* Response toolbar */
+        .response-toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .response-toolbar button {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .response-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
         
         /* Presets */
         .presets {
@@ -420,10 +509,15 @@
         
         /* JSON highlighting */
         .json-key { color: #7ee787; }
+        :root.light-mode .json-key { color: #1a7f37; }
         .json-string { color: #a5d6ff; }
+        :root.light-mode .json-string { color: #0969da; }
         .json-number { color: #79c0ff; }
+        :root.light-mode .json-number { color: #0550ae; }
         .json-boolean { color: #ff7b72; }
+        :root.light-mode .json-boolean { color: #cf222e; }
         .json-null { color: #ff7b72; }
+        :root.light-mode .json-null { color: #cf222e; }
         
         /* Empty state */
         .empty-state {
@@ -450,15 +544,69 @@
         }
         .copy-toast.show { display: flex; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Error message */
+        .error-message {
+            background: rgba(218, 54, 51, 0.1);
+            border: 1px solid var(--delete);
+            color: var(--delete);
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+        }
+        .error-message.cors {
+            background: rgba(210, 153, 34, 0.1);
+            border-color: var(--patch);
+            color: var(--patch);
+        }
+        
+        /* Keyboard shortcut hint */
+        .shortcut-hint {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-left: 4px;
+            opacity: 0.7;
+        }
+        
+        /* Timeout display */
+        .timeout-setting {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+        .timeout-setting label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .timeout-setting input {
+            width: 60px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        
+        /* Datalist styling support */
+        datalist {
+            background: var(--surface);
+            color: var(--text);
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1><span>⚡</span> API Tester</h1>
         <div class="header-actions">
-            <button class="icon-btn" onclick="saveRequest()">💾 Save</button>
-            <button class="icon-btn" onclick="shareRequest()">🔗 Share</button>
-            <button class="icon-btn" onclick="exportCollection()">📥 Export</button>
+            <button class="icon-btn" onclick="toggleTheme()" aria-label="Toggle dark/light theme" title="Toggle Theme">🌓 Theme</button>
+            <button class="icon-btn" onclick="saveRequest()" aria-label="Save request to file">💾 Save</button>
+            <button class="icon-btn" onclick="shareRequest()" aria-label="Share request URL">🔗 Share</button>
+            <button class="icon-btn" onclick="exportCollection()" aria-label="Export history as JSON">📥 Export</button>
         </div>
     </div>
     
@@ -467,7 +615,7 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 History
-                <span class="clear-history" onclick="clearHistory()">Clear</span>
+                <span class="clear-history" onclick="clearHistory()" role="button" tabindex="0" aria-label="Clear history">Clear</span>
             </div>
             <div class="sidebar-content" id="historyList">
                 <div class="empty-state" style="padding: 40px 20px;">
@@ -482,7 +630,7 @@
             <div class="panel-header">Request</div>
             <div class="panel-content">
                 <div class="url-bar">
-                    <select class="method-select" id="method">
+                    <select class="method-select" id="method" aria-label="HTTP method">
                         <option value="GET">GET</option>
                         <option value="POST">POST</option>
                         <option value="PUT">PUT</option>
@@ -492,25 +640,69 @@
                         <option value="OPTIONS">OPTIONS</option>
                     </select>
                     <input type="text" class="url-input" id="url" placeholder="https://api.example.com/users" 
-                           value="https://jsonplaceholder.typicode.com/posts/1">
-                    <button class="send-btn" id="sendBtn" onclick="sendRequest()">Send</button>
+                           value="https://jsonplaceholder.typicode.com/posts/1" aria-label="Request URL">
+                    <button class="send-btn" id="sendBtn" onclick="sendRequest()" aria-label="Send request">Send <span class="shortcut-hint">(Ctrl+Enter)</span></button>
+                </div>
+                <div class="url-error" id="urlError">Invalid URL. Only http:// and https:// protocols are allowed.</div>
+                
+                <!-- Query Parameters Section -->
+                <div class="query-params-section">
+                    <div class="query-params-header">
+                        <span class="query-params-title">Query Parameters</span>
+                        <button class="query-toggle" onclick="toggleQueryParams()" id="queryToggle">Hide</button>
+                    </div>
+                    <div class="query-params-list" id="queryParamsList">
+                        <!-- Query params will be added here -->
+                    </div>
+                    <button class="add-btn" onclick="addQueryParam()">+ Add Query Parameter</button>
                 </div>
                 
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab('headers', this)">Headers</button>
-                    <button class="tab" onclick="switchTab('body', this)">Body</button>
-                    <button class="tab" onclick="switchTab('auth', this)">Auth</button>
+                    <button class="tab active" onclick="switchTab('headers', this)" aria-label="Headers tab">Headers</button>
+                    <button class="tab" onclick="switchTab('body', this)" aria-label="Body tab">Body</button>
+                    <button class="tab" onclick="switchTab('auth', this)" aria-label="Authentication tab">Auth</button>
                 </div>
                 
                 <div class="tab-content active" id="headers-tab">
                     <div class="headers-list" id="headersList">
                         <div class="header-row">
-                            <input type="text" class="header-input" placeholder="Content-Type" value="Content-Type">
-                            <input type="text" class="header-input" placeholder="application/json" value="application/json">
-                            <button class="delete-btn" onclick="removeHeader(this)">✕</button>
+                            <input type="text" class="header-input" placeholder="Content-Type" value="Content-Type" list="common-headers" aria-label="Header name">
+                            <input type="text" class="header-input" placeholder="application/json" value="application/json" list="common-content-types" aria-label="Header value">
+                            <button class="delete-btn" onclick="removeHeader(this)" aria-label="Remove header">✕</button>
                         </div>
                     </div>
                     <button class="add-btn" onclick="addHeader()">+ Add Header</button>
+                    
+                    <datalist id="common-headers">
+                        <option value="Accept">
+                        <option value="Accept-Encoding">
+                        <option value="Accept-Language">
+                        <option value="Authorization">
+                        <option value="Cache-Control">
+                        <option value="Connection">
+                        <option value="Content-Length">
+                        <option value="Content-Type">
+                        <option value="Cookie">
+                        <option value="Host">
+                        <option value="If-Match">
+                        <option value="If-None-Match">
+                        <option value="Origin">
+                        <option value="Referer">
+                        <option value="User-Agent">
+                        <option value="X-API-Key">
+                        <option value="X-Requested-With">
+                    </datalist>
+                    
+                    <datalist id="common-content-types">
+                        <option value="application/json">
+                        <option value="application/xml">
+                        <option value="application/x-www-form-urlencoded">
+                        <option value="multipart/form-data">
+                        <option value="text/plain">
+                        <option value="text/html">
+                        <option value="text/css">
+                        <option value="application/javascript">
+                    </datalist>
                 </div>
                 
                 <div class="tab-content" id="body-tab">
@@ -519,7 +711,7 @@
                         <button onclick="minifyJSON()">Minify</button>
                         <button onclick="clearBody()">Clear</button>
                     </div>
-                    <textarea class="body-editor" id="body" placeholder='{"key": "value"}'>{
+                    <textarea class="body-editor" id="body" placeholder='{"key": "value"}' aria-label="Request body">{
   "title": "foo",
   "body": "bar",
   "userId": 1
@@ -529,14 +721,19 @@
                 <div class="tab-content" id="auth-tab">
                     <div class="headers-list">
                         <div class="header-row">
-                            <input type="text" class="header-input" placeholder="Username" id="authUser">
-                            <input type="password" class="header-input" placeholder="Password / Token" id="authPass">
+                            <input type="text" class="header-input" placeholder="Username" id="authUser" aria-label="Username">
+                            <input type="password" class="header-input" placeholder="Password / Token" id="authPass" aria-label="Password or token">
                             <button class="icon-btn" onclick="applyAuth()">Apply</button>
                         </div>
                     </div>
-                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 16px;">
+                    <div class="auth-notice">
                         Or add Authorization header manually in Headers tab.
-                    </p>
+                    </div>
+                </div>
+                
+                <div class="timeout-setting">
+                    <label for="timeout">Timeout (seconds):</label>
+                    <input type="number" id="timeout" value="30" min="1" max="300" aria-label="Request timeout in seconds">
                 </div>
                 
                 <div class="presets">
@@ -559,6 +756,8 @@
                 </div>
             </div>
             <div class="panel-content">
+                <div id="errorContainer"></div>
+                
                 <div class="response-meta" id="responseMeta" style="display: none;">
                     <div class="meta-item">
                         <span class="label">Status:</span>
@@ -575,19 +774,24 @@
                 </div>
                 
                 <div class="response-tabs">
-                    <button class="response-tab active" onclick="switchResponseTab('body', this)">Body</button>
-                    <button class="response-tab" onclick="switchResponseTab('headers', this)">Headers</button>
+                    <button class="response-tab active" onclick="switchResponseTab('body', this)" aria-label="Response body tab">Body</button>
+                    <button class="response-tab" onclick="switchResponseTab('headers', this)" aria-label="Response headers tab">Headers</button>
                 </div>
                 
                 <div class="response-headers" id="responseHeaders"></div>
                 
                 <div class="response-body" id="responseBody" style="display: none;">
+                    <div class="response-toolbar">
+                        <button onclick="copyResponse()" aria-label="Copy response to clipboard">📋 Copy</button>
+                        <button onclick="exportResponse()" aria-label="Export response as file">💾 Export</button>
+                    </div>
                     <pre id="responseContent"></pre>
                 </div>
                 
                 <div id="emptyState" class="empty-state">
                     <div class="empty-state-icon">📡</div>
                     <p>Send a request to see the response</p>
+                    <p style="font-size: 0.8rem; margin-top: 8px; opacity: 0.7;">Press Ctrl+Enter to send</p>
                 </div>
             </div>
         </div>
@@ -595,6 +799,7 @@
 
     <div class="copy-toast" id="copyToast">✅ Copied to clipboard!</div>
 
+    <script src="../shared/utils.js"></script>
     <script>
         // History management
         let requestHistory = [];
@@ -605,6 +810,8 @@
             requestHistory = [];
         }
         let currentResponseHeaders = {};
+        let currentResponseText = '';
+        let queryParamsVisible = true;
         
         const presets = {
             jsonplaceholder: {
@@ -658,14 +865,96 @@
             }
         }
         
+        // Query Parameters
+        function toggleQueryParams() {
+            queryParamsVisible = !queryParamsVisible;
+            const list = document.getElementById('queryParamsList');
+            const toggle = document.getElementById('queryToggle');
+            if (queryParamsVisible) {
+                list.style.display = 'flex';
+                list.style.flexDirection = 'column';
+                toggle.textContent = 'Hide';
+            } else {
+                list.style.display = 'none';
+                toggle.textContent = 'Show';
+            }
+        }
+        
+        function addQueryParam() {
+            const row = document.createElement('div');
+            row.className = 'query-param-row';
+            row.innerHTML = `
+                <input type="text" class="header-input" placeholder="Parameter name" aria-label="Query parameter name">
+                <input type="text" class="header-input" placeholder="Value" aria-label="Query parameter value">
+                <button class="delete-btn" onclick="removeQueryParam(this)" aria-label="Remove query parameter">✕</button>
+            `;
+            document.getElementById('queryParamsList').appendChild(row);
+        }
+        
+        function removeQueryParam(btn) {
+            btn.parentElement.remove();
+            buildUrlFromParams();
+        }
+        
+        function buildUrlFromParams() {
+            const baseUrl = document.getElementById('url').value.split('?')[0];
+            const rows = document.querySelectorAll('#queryParamsList .query-param-row');
+            const params = [];
+            
+            rows.forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                const key = inputs[0].value.trim();
+                const value = inputs[1].value.trim();
+                if (key) {
+                    params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+                }
+            });
+            
+            if (params.length > 0) {
+                document.getElementById('url').value = baseUrl + '?' + params.join('&');
+            } else {
+                document.getElementById('url').value = baseUrl;
+            }
+        }
+        
+        // Parse URL and populate query params editor
+        function parseUrlParams() {
+            const url = document.getElementById('url').value;
+            const queryIndex = url.indexOf('?');
+            
+            if (queryIndex === -1) {
+                document.getElementById('queryParamsList').innerHTML = '';
+                return;
+            }
+            
+            const queryString = url.substring(queryIndex + 1);
+            const pairs = queryString.split('&');
+            
+            const container = document.getElementById('queryParamsList');
+            container.innerHTML = '';
+            
+            pairs.forEach(pair => {
+                if (!pair) return;
+                const [key, value = ''] = pair.split('=').map(decodeURIComponent);
+                const row = document.createElement('div');
+                row.className = 'query-param-row';
+                row.innerHTML = `
+                    <input type="text" class="header-input" placeholder="Parameter name" value="${escapeHtml(key)}" aria-label="Query parameter name">
+                    <input type="text" class="header-input" placeholder="Value" value="${escapeHtml(value)}" aria-label="Query parameter value">
+                    <button class="delete-btn" onclick="removeQueryParam(this)" aria-label="Remove query parameter">✕</button>
+                `;
+                container.appendChild(row);
+            });
+        }
+        
         // Headers
         function addHeader() {
             const row = document.createElement('div');
             row.className = 'header-row';
             row.innerHTML = `
-                <input type="text" class="header-input" placeholder="Header">
-                <input type="text" class="header-input" placeholder="Value">
-                <button class="delete-btn" onclick="removeHeader(this)">✕</button>
+                <input type="text" class="header-input" placeholder="Header" list="common-headers" aria-label="Header name">
+                <input type="text" class="header-input" placeholder="Value" aria-label="Header value">
+                <button class="delete-btn" onclick="removeHeader(this)" aria-label="Remove header">✕</button>
             `;
             document.getElementById('headersList').appendChild(row);
         }
@@ -675,15 +964,43 @@
         }
         
         // Auth
+        function safeBtoa(str) {
+            // Handle Unicode characters properly
+            try {
+                return btoa(unescape(encodeURIComponent(str)));
+            } catch (e) {
+                // Fallback for environments where unescape is deprecated
+                const bytes = new TextEncoder().encode(str);
+                let binary = '';
+                bytes.forEach(b => binary += String.fromCharCode(b));
+                return btoa(binary);
+            }
+        }
+        
+        function safeAtob(str) {
+            // Handle Unicode characters properly
+            try {
+                return decodeURIComponent(escape(atob(str)));
+            } catch (e) {
+                // Fallback
+                const binary = atob(str);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return new TextDecoder().decode(bytes);
+            }
+        }
+        
         function applyAuth() {
             const user = document.getElementById('authUser').value;
             const pass = document.getElementById('authPass').value;
             if (!user && !pass) return;
             
-            const token = btoa(user + ':' + pass);
+            const token = safeBtoa(user + ':' + pass);
             
             // Check if Authorization header exists
-            const rows = document.querySelectorAll('.header-row');
+            const rows = document.querySelectorAll('#headersList .header-row');
             let found = false;
             rows.forEach(row => {
                 const inputs = row.querySelectorAll('input');
@@ -697,9 +1014,9 @@
                 const row = document.createElement('div');
                 row.className = 'header-row';
                 row.innerHTML = `
-                    <input type="text" class="header-input" value="Authorization">
-                    <input type="text" class="header-input" value="Basic ${token}">
-                    <button class="delete-btn" onclick="removeHeader(this)">✕</button>
+                    <input type="text" class="header-input" value="Authorization" aria-label="Header name">
+                    <input type="text" class="header-input" value="Basic ${token}" aria-label="Header value">
+                    <button class="delete-btn" onclick="removeHeader(this)" aria-label="Remove header">✕</button>
                 `;
                 document.getElementById('headersList').appendChild(row);
             }
@@ -738,6 +1055,18 @@
             document.getElementById('url').value = p.url;
             document.getElementById('method').value = p.method;
             document.getElementById('body').value = p.body;
+            parseUrlParams();
+        }
+        
+        // URL validation
+        function isValidUrl(url) {
+            try {
+                const parsed = new URL(url);
+                // Only allow http and https protocols
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch (e) {
+                return false;
+            }
         }
         
         // Request
@@ -745,11 +1074,26 @@
             const url = document.getElementById('url').value;
             const method = document.getElementById('method').value;
             const body = document.getElementById('body').value;
+            const timeoutSeconds = parseInt(document.getElementById('timeout').value, 10) || 30;
+            const urlInput = document.getElementById('url');
+            const urlError = document.getElementById('urlError');
             
             if (!url) {
                 alert('Please enter a URL');
                 return;
             }
+            
+            // Validate URL protocol
+            if (!isValidUrl(url)) {
+                urlInput.classList.add('error');
+                urlError.classList.add('show');
+                return;
+            }
+            urlInput.classList.remove('error');
+            urlError.classList.remove('show');
+            
+            // Clear previous errors
+            document.getElementById('errorContainer').innerHTML = '';
             
             document.getElementById('sendBtn').disabled = true;
             document.getElementById('loading').classList.add('active');
@@ -758,6 +1102,8 @@
             document.getElementById('responseBody').style.display = 'none';
             
             const startTime = performance.now();
+            let controller = null;
+            let timeoutId = null;
             
             try {
                 const headers = {};
@@ -777,9 +1123,35 @@
                     options.body = body;
                 }
                 
+                // Add timeout using AbortController
+                controller = new AbortController();
+                options.signal = controller.signal;
+                
+                timeoutId = setTimeout(() => {
+                    controller.abort();
+                }, timeoutSeconds * 1000);
+                
                 const response = await fetch(url, options);
+                clearTimeout(timeoutId);
+                
+                // Check response size (10MB limit)
+                const contentLength = response.headers.get('content-length');
+                const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+                if (contentLength && parseInt(contentLength, 10) > MAX_SIZE) {
+                    throw new Error(`Response size (${formatSize(parseInt(contentLength, 10))}) exceeds maximum allowed (10MB)`);
+                }
+                
                 const responseText = await response.text();
+                
+                // Check actual response size
+                if (responseText.length > MAX_SIZE) {
+                    throw new Error(`Response size (${formatSize(responseText.length)}) exceeds maximum allowed (10MB)`);
+                }
+                
                 const endTime = performance.now();
+                
+                // Store response
+                currentResponseText = responseText;
                 
                 // Store response headers
                 currentResponseHeaders = {};
@@ -793,11 +1165,12 @@
                 document.getElementById('responseTime').textContent = Math.round(endTime - startTime) + 'ms';
                 document.getElementById('responseSize').textContent = formatSize(new Blob([responseText]).size);
                 
-                // Format response
+                // Format response - FIX: Escape HTML first, then apply syntax highlighting
                 let formatted = responseText;
                 try {
                     const json = JSON.parse(responseText);
-                    formatted = syntaxHighlight(JSON.stringify(json, null, 2));
+                    const jsonStr = JSON.stringify(json, null, 2);
+                    formatted = syntaxHighlight(escapeHtml(jsonStr));
                 } catch {
                     formatted = escapeHtml(responseText);
                 }
@@ -813,11 +1186,33 @@
                 addToHistory(method, url, response.status);
                 
             } catch (error) {
+                clearTimeout(timeoutId);
+                
+                let errorMessage = error.message;
+                let isCorsError = false;
+                
+                // Detect CORS errors
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Network error. This might be a CORS issue - the server may not allow cross-origin requests from this domain.';
+                    isCorsError = true;
+                } else if (error.name === 'AbortError') {
+                    errorMessage = `Request timed out after ${timeoutSeconds} seconds`;
+                }
+                
+                // Show error in error container
+                const errorDiv = document.createElement('div');
+                errorDiv.className = `error-message ${isCorsError ? 'cors' : ''}`;
+                errorDiv.textContent = errorMessage;
+                document.getElementById('errorContainer').appendChild(errorDiv);
+                
                 document.getElementById('statusCode').textContent = 'Error';
                 document.getElementById('statusCode').className = 'value status-5xx';
-                document.getElementById('responseContent').textContent = error.message;
+                document.getElementById('responseContent').textContent = errorMessage;
                 document.getElementById('responseMeta').style.display = 'flex';
                 document.getElementById('responseBody').style.display = 'block';
+                
+                currentResponseText = errorMessage;
+                currentResponseHeaders = {};
             } finally {
                 document.getElementById('sendBtn').disabled = false;
                 document.getElementById('loading').classList.remove('active');
@@ -878,9 +1273,12 @@
                 const el = document.createElement('div');
                 el.className = 'history-item';
                 el.onclick = () => loadFromHistory(index);
+                el.setAttribute('role', 'button');
+                el.setAttribute('tabindex', '0');
+                el.setAttribute('aria-label', `${item.method} request to ${item.url}`);
                 el.innerHTML = `
                     <span class="history-method ${item.method.toLowerCase()}">${item.method}</span>
-                    <div class="history-url">${item.url}</div>
+                    <div class="history-url">${escapeHtml(item.url)}</div>
                     <div class="history-time">${new Date(item.time).toLocaleString()}</div>
                 `;
                 container.appendChild(el);
@@ -891,6 +1289,7 @@
             const item = requestHistory[index];
             document.getElementById('url').value = item.url;
             document.getElementById('method').value = item.method;
+            parseUrlParams();
         }
         
         function clearHistory() {
@@ -928,7 +1327,8 @@
             };
             
             const json = JSON.stringify(data);
-            const base64 = btoa(json);
+            // FIX: Use safeBtoa to handle Unicode characters
+            const base64 = safeBtoa(json);
             const shareUrl = `${window.location.origin}${window.location.pathname}?share=${base64}`;
             
             navigator.clipboard.writeText(shareUrl);
@@ -943,6 +1343,42 @@
             a.download = 'api-history.json';
             a.click();
             URL.revokeObjectURL(url);
+        }
+        
+        function exportResponse() {
+            if (!currentResponseText) {
+                showToast('No response to export');
+                return;
+            }
+            
+            const blob = new Blob([currentResponseText], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            a.href = url;
+            a.download = `response-${timestamp}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Response exported!');
+        }
+        
+        function copyResponse() {
+            if (!currentResponseText) {
+                showToast('No response to copy');
+                return;
+            }
+            navigator.clipboard.writeText(currentResponseText);
+            showToast('Response copied to clipboard!');
+        }
+        
+        function toggleTheme() {
+            document.documentElement.classList.toggle('light-mode');
+            const isLight = document.documentElement.classList.contains('light-mode');
+            try {
+                localStorage.setItem('apiTesterTheme', isLight ? 'light' : 'dark');
+            } catch (e) {
+                console.warn('localStorage not available:', e);
+            }
         }
         
         function showToast(msg) {
@@ -960,26 +1396,26 @@
             return 'status-5xx';
         }
         
-        function formatSize(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-        
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-        
+        // FIX: Syntax highlighting now works on escaped HTML
         function syntaxHighlight(json) {
-            return json.replace(/(".*?")(?=:)/g, '<span class="json-key">$1</span>')
-                .replace(/(".*?")/g, '<span class="json-string">$1</span>')
+            // json is already escaped, so we need to handle the highlighting differently
+            // We replace escaped quotes with placeholders, apply highlighting, then restore
+            return json
+                .replace(/(&quot;(?:[^&]|&(?!quot;))*&quot;)(?=:)/g, '<span class="json-key">$1</span>')
+                .replace(/(&quot;(?:[^&]|&(?!quot;))*&quot;)/g, '<span class="json-string">$1</span>')
                 .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
                 .replace(/\b(null)\b/g, '<span class="json-null">$1</span>')
                 .replace(/\b(\d+)\b/g, '<span class="json-number">$1</span>');
+        }
+        
+        // Load saved theme
+        try {
+            const savedTheme = localStorage.getItem('apiTesterTheme');
+            if (savedTheme === 'light') {
+                document.documentElement.classList.add('light-mode');
+            }
+        } catch (e) {
+            console.warn('localStorage not available:', e);
         }
         
         // Load shared request
@@ -987,19 +1423,31 @@
         const shareData = urlParams.get('share');
         if (shareData) {
             try {
-                const data = JSON.parse(atob(shareData));
+                const data = JSON.parse(safeAtob(shareData));
                 document.getElementById('url').value = data.url || '';
                 document.getElementById('method').value = data.method || 'GET';
                 document.getElementById('body').value = data.body || '';
+                parseUrlParams();
             } catch (e) {
                 console.error('Failed to load shared request');
             }
         }
         
-        // Enter to send
+        // Enter to send in URL input, Ctrl+Enter to send from anywhere
         document.getElementById('url').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendRequest();
         });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                sendRequest();
+            }
+        });
+        
+        // Parse URL params on load and when URL changes
+        document.getElementById('url').addEventListener('change', parseUrlParams);
+        parseUrlParams();
     </script>
     
     <footer style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: auto;">

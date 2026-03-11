@@ -283,6 +283,7 @@
         </div>
     </div>
 
+    <script src="../shared/utils.js"></script>
     <script>
         let currentColor = '#667eea';
         let colorHistory = [];
@@ -452,19 +453,18 @@
             return rgbToHex(rgb.r, rgb.g, rgb.b);
         }
 
-        function copyColor(type) {
+        async function copyColor(type) {
             let text = '';
             switch (type) {
                 case 'hex': text = hexInput.value; break;
                 case 'rgb': text = rgbInput.value; break;
                 case 'hsl': text = hslInput.value; break;
             }
-            navigator.clipboard.writeText(text).then(() => {
-                const btn = event.target;
-                const originalText = btn.textContent;
-                btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = originalText, 1000);
-            });
+            const success = await Utils.copyToClipboard(text);
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = success ? 'Copied!' : 'Failed!';
+            setTimeout(() => btn.textContent = originalText, 1000);
         }
 
         function renderPresetPalettes() {

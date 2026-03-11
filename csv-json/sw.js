@@ -27,14 +27,30 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Stale-while-revalidate strategy
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
-      .then((response) => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
+      .then((cachedResponse) => {
+        // Return cached response immediately if available
+        const fetchPromise = fetch(event.request)
+          .then((networkResponse) => {
+            // Update cache with fresh response
+            if (networkResponse && networkResponse.status === 200) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(event.request, responseClone);
+              });
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            // Network failed, but we already returned cached version
+            console.warn('Network fetch failed, serving from cache');
+          });
+        
+        // Return cached version immediately, or fetch if not in cache
+        return cachedResponse || fetchPromise;
       })
   );
 });

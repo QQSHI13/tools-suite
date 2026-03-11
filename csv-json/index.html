@@ -259,6 +259,7 @@
     
     <footer>Built with ❤️ by QQ & <a href="https://qqshi13.github.io/nova/" target="_blank">Nova ☄️</a></footer>
 
+    <script src="../shared/utils.js"></script>
     <script>
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
@@ -290,7 +291,7 @@
             if (e.target.files[0]) handleFile(e.target.files[0]);
         });
 
-        csvInput.addEventListener('input', debounce(convert, 300));
+        csvInput.addEventListener('input', Utils.debounce(convert, 300));
         document.querySelectorAll('.options input').forEach(input => {
             input.addEventListener('change', convert);
         });
@@ -320,13 +321,7 @@
             csvInput.style.display = 'block';
         }
 
-        function debounce(fn, ms) {
-            let timeout;
-            return (...args) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => fn(...args), ms);
-            };
-        }
+
 
         function parseCSV(text) {
             // Handle Windows line endings (\r\n) and old Mac (\r)
@@ -448,7 +443,7 @@
                             // Not escaped - end of string
                             inString = false;
                             const spanClass = isKey ? 'json-key' : 'json-string';
-                            result += `<span class="${spanClass}">"${escapeHtml(stringContent)}"</span>`;
+                            result += `<span class="${spanClass}">"${Utils.escapeHtml(stringContent)}"</span>`;
                             isKey = false; // After first value, no more keys at this level
                         } else {
                             stringContent += char;
@@ -484,24 +479,10 @@
             return result;
         }
         
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
         function updateStats(rows, cols, bytes) {
             document.getElementById('rowCount').textContent = rows;
             document.getElementById('colCount').textContent = cols;
-            document.getElementById('jsonSize').textContent = formatBytes(bytes);
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            document.getElementById('jsonSize').textContent = Utils.formatBytes(bytes);
         }
 
         function clearAll() {
