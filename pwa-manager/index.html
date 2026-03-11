@@ -1010,6 +1010,9 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            // Check if we're in batch registration flow
+            await checkBatchRegistration();
+            
             try {
                 await refreshSWList();
                 await refreshCacheList();
@@ -1173,39 +1176,83 @@
             }
 
             const script = document.getElementById('batchSwScript').value || 'sw.js';
-            let successCount = 0;
-            let failCount = 0;
+            const pages = Array.from(selectedPages);
+            
+            // Generate registration script
+            const regScript = `// Add this to your HTML pages to register Service Workers
+// Pages: ${pages.join(', ')}
 
-            showToast(`Starting registration for ${selectedPages.size} pages...`, 'info');
-
-            for (const path of selectedPages) {
-                try {
-                    // Open page in new window and register SW
-                    const url = `${GITHUB_PAGES}${path}`;
-                    const win = window.open(url, '_blank');
-                    
-                    // Wait a bit for page to load, then try to register SW
-                    setTimeout(() => {
-                        try {
-                            if (win.navigator.serviceWorker) {
-                                win.navigator.serviceWorker.register(script, { scope: path })
-                                    .then(() => console.log(`SW registered for ${path}`))
-                                    .catch(err => console.error(`SW failed for ${path}:`, err));
-                            }
-                        } catch (e) {
-                            console.error(`Error registering for ${path}:`, e);
-                        }
-                    }, 2000);
-                    
-                    successCount++;
-                } catch (err) {
-                    console.error(`Failed to open ${path}:`, err);
-                    failCount++;
-                }
-            }
-
-            showToast(`Opened ${successCount} page(s). Check each page to complete registration.`, successCount > 0 ? 'success' : 'error');
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('${script}')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.error('SW failed:', err));
+}`;
+            
+            // Show modal with instructions
+            showRegisterInstructions(pages, regScript);
             hideBatchModal();
+        }
+        
+        function showRegisterInstructions(pages, script) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.id = 'instructionsModal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h3>Registration Instructions</h3>
+                        <button class="modal-close" onclick="document.getElementById('instructionsModal').remove()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Add the following code to your HTML pages:</p>
+                        <div class="form-group">
+                            <textarea class="form-input" id="regScript" rows="8" style="font-family: monospace; font-size: 12px;" readonly>${script}</textarea>
+                        </div>
+                        <p style="margin-top: 16px;">Pages to update (${pages.length}):</p>
+                        <ul style="max-height: 150px; overflow-y: auto; background: var(--bg); padding: 12px; border-radius: 8px; margin-top: 8px;">
+                            ${pages.map(p => `<li style="margin: 4px 0; font-size: 13px;">${p}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn" onclick="document.getElementById('instructionsModal').remove()">Close</button>
+                        <button class="btn primary" onclick="copyRegScript()">Copy Script</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            window.copyRegScript = () => {
+                const textarea = document.getElementById('regScript');
+                textarea.select();
+                document.execCommand('copy');
+                showToast('Script copied to clipboard!', 'success');
+            };
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+        
+        // Check if we need to register SW on page load (for pages with ?registerSW)
+        async function checkBatchRegistration() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.has('registerSW')) return;
+            
+            const script = urlParams.get('script') || 'sw.js';
+            
+            // Register SW on current page
+            try {
+                if ('serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.register(script);
+                    showToast(`Service Worker registered!`, 'success');
+                    
+                    // Remove query param from URL
+                    const newUrl = window.location.pathname + window.location.hash;
+                    window.history.replaceState({}, '', newUrl);
+                }
+            } catch (err) {
+                showToast(`Registration failed: ${err.message}`, 'error');
+            }
         }
 
         async function scanGitHubPages() {
@@ -1238,6 +1285,13 @@
             // Show summary
             const withSW = KNOWN_PAGES.filter(p => p.hasSW).length;
             const withoutSW = KNOWN_PAGES.length - withSW;
+            
+            // Build quick links for pages without SW
+            const pagesWithoutSW = KNOWN_PAGES.filter(p => !p.hasSW);
+            const quickLinks = pagesWithoutSW.slice(0, 5).map(p => 
+                `<a href="${GITHUB_PAGES}${p.path}?registerSW=true" target="_blank" style="color: var(--accent); text-decoration: none; display: block; padding: 4px 0; font-size: 13px;">${p.path}</a>`
+            ).join('');
+            const moreCount = pagesWithoutSW.length - 5;
 
             container.innerHTML = `
                 <div style="padding: 16px;">
@@ -1251,8 +1305,17 @@
                             <div style="font-size: 12px; color: var(--text-secondary);">Without SW</div>
                         </div>
                     </div>
+                    ${pagesWithoutSW.length > 0 ? `
+                    <div style="margin-bottom: 16px;">
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Quick register (opens in new tab):</p>
+                        <div style="background: var(--bg); padding: 8px 12px; border-radius: 8px; max-height: 120px; overflow-y: auto;">
+                            ${quickLinks}
+                            ${moreCount > 0 ? `<p style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">+${moreCount} more...</p>` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
                     <button class="btn primary" onclick="showBatchModal()" style="width: 100%;">
-                        🌐 Manage GitHub Pages
+                        🌐 Batch Register
                     </button>
                 </div>
             `;
