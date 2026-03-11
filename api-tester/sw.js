@@ -1,4 +1,4 @@
-const CACHE_NAME = 'api-tester-v2';
+const CACHE_NAME = 'api-tester-v3';
 const urlsToCache = [
   './',
   './index.html',
@@ -6,7 +6,9 @@ const urlsToCache = [
   './manifest.json'
 ];
 
-// Install event - cache assets
+// Hard reload detection
+let isHardReload = false;
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -16,7 +18,6 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -30,9 +31,18 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - stale-while-revalidate strategy
+// Handle skipWaiting messages from clients
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'HARD_RELOAD') {
+    isHardReload = true;
+  }
+});
+
+// Stale-while-revalidate strategy with hard reload support
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests and cross-origin requests
   if (event.request.method !== 'GET') {
     return;
   }
@@ -40,22 +50,31 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(event.request).then((cachedResponse) => {
-        // Fetch from network in the background
+        // If hard reload, always fetch fresh
+        if (isHardReload) {
+          return fetch(event.request)
+            .then((networkResponse) => {
+              if (networkResponse && networkResponse.status === 200) {
+                cache.put(event.request, networkResponse.clone());
+              }
+              isHardReload = false;
+              return networkResponse;
+            })
+            .catch(() => cachedResponse);
+        }
+
         const fetchPromise = fetch(event.request)
           .then((networkResponse) => {
-            // Update cache with fresh response
             if (networkResponse && networkResponse.status === 200) {
               cache.put(event.request, networkResponse.clone());
             }
             return networkResponse;
           })
           .catch((error) => {
-            console.error('Fetch failed:', error);
-            // Return cached response if network fails
+            console.warn('Network fetch failed, serving from cache:', error);
             return cachedResponse;
           });
 
-        // Return cached response immediately (stale), revalidate in background
         return cachedResponse || fetchPromise;
       });
     })

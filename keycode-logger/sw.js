@@ -1,10 +1,10 @@
-const CACHE_NAME = 'json-viewer-v2';
+const CACHE_NAME = 'keycode-logger-v1';
 const urlsToCache = [
   './',
   './index.html'
 ];
 
-// Hard reload detection - check if this is a forced refresh
+// Hard reload detection
 let isHardReload = false;
 
 self.addEventListener('install', (event) => {
@@ -13,7 +13,6 @@ self.addEventListener('install', (event) => {
       .then((cache) => cache.addAll(urlsToCache))
       .catch((err) => console.error('Cache install failed:', err))
   );
-  // Skip waiting immediately for hard reload support
   self.skipWaiting();
 });
 
@@ -27,7 +26,6 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  // Take control of all clients immediately
   self.clients.claim();
 });
 
@@ -43,7 +41,6 @@ self.addEventListener('message', (event) => {
 
 // Stale-while-revalidate strategy with hard reload support
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') {
     return;
   }
@@ -64,10 +61,8 @@ self.addEventListener('fetch', (event) => {
             .catch(() => cachedResponse);
         }
 
-        // Fetch from network in the background
         const fetchPromise = fetch(event.request)
           .then((networkResponse) => {
-            // Update cache with fresh response
             if (networkResponse && networkResponse.status === 200) {
               cache.put(event.request, networkResponse.clone());
             }
@@ -75,11 +70,9 @@ self.addEventListener('fetch', (event) => {
           })
           .catch((error) => {
             console.warn('Network fetch failed, serving from cache:', error);
-            // Return cached response if network fails
             return cachedResponse;
           });
 
-        // Return cached version immediately (stale), revalidate in background
         return cachedResponse || fetchPromise;
       });
     })

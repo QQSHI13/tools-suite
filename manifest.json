@@ -1,0 +1,16 @@
+{
+  "name": "Tools Suite",
+  "short_name": "Tools Suite",
+  "description": "A collection of useful web tools",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a0c10",
+  "theme_color": "#58a6ff",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%2358a6ff' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%F0%9F%9B%A0%EF%B8%8F%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -461,8 +461,34 @@
     </script>
     <footer>Built with ❤️ by QQ & <a href="https://qqshi13.github.io/nova/" target="_blank">Nova ☄️</a></footer>
     <script>
+        // Service Worker registration with auto-refresh on hard reload
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            // Detect hard reload (Ctrl+Shift+R or Cmd+Shift+R)
+            const isHardReload = performance.navigation.type === 1 && 
+                (performance.navigation.redirectCount === 0);
+            
+            navigator.serviceWorker.register('sw.js').then((registration) => {
+                // Handle updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New version available, skip waiting
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                    });
+                });
+
+                // If hard reload, tell SW to fetch fresh
+                if (isHardReload && registration.active) {
+                    registration.active.postMessage({ type: 'HARD_RELOAD' });
+                }
+            });
+
+            // Auto-refresh when controller changes (after skipWaiting)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
         }
     </script>
 </body>
