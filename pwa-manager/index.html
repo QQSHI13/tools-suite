@@ -724,8 +724,9 @@
                 return;
             }
 
-            const registrations = await getServiceWorkers();
-            document.getElementById('swCount').textContent = registrations.length;
+            try {
+                const registrations = await getServiceWorkers();
+                document.getElementById('swCount').textContent = registrations.length;
 
             if (registrations.length === 0) {
                 container.innerHTML = `
@@ -764,6 +765,15 @@
 
             container.innerHTML = '';
             container.appendChild(list);
+            } catch (err) {
+                console.error('refreshSWList error:', err);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">❌</div>
+                        <p>Error loading service workers: ${err.message}</p>
+                    </div>
+                `;
+            }
         }
 
         async function unregisterSW(scope) {
@@ -861,7 +871,8 @@
                 return;
             }
 
-            const caches = await getCaches();
+            try {
+                const caches = await getCaches();
             document.getElementById('cacheCount').textContent = caches.length;
 
             if (caches.length === 0) {
@@ -898,6 +909,15 @@
 
             container.innerHTML = '';
             container.appendChild(list);
+            } catch (err) {
+                console.error('refreshCacheList error:', err);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">❌</div>
+                        <p>Error loading caches: ${err.message}</p>
+                    </div>
+                `;
+            }
         }
 
         async function deleteCache(name) {
@@ -982,11 +1002,22 @@
             showToast('Refreshed', 'success');
         }
 
+        // Error handler
+        window.addEventListener('error', (e) => {
+            console.error('Global error:', e.error);
+            showToast('Error: ' + (e.error?.message || 'Unknown error'), 'error');
+        });
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            refreshSWList();
-            refreshCacheList();
-            updateStats();
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await refreshSWList();
+                await refreshCacheList();
+                await updateStats();
+            } catch (err) {
+                console.error('Initialization error:', err);
+                showToast('Failed to initialize: ' + err.message, 'error');
+            }
         });
 
         // Close modal on backdrop click
