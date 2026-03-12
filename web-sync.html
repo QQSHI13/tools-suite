@@ -213,7 +213,6 @@
         <button id="connectBtn">Connect</button>
         <button id="syncBtn" class="secondary" disabled>Send Settings (SYNC)</button>
         <button id="getBtn" class="secondary" disabled>Load from Device (GET)</button>
-        <button id="doneBtn" class="secondary" disabled>Done (PONG)</button>
         
         <div class="legend">
             <strong>LED Colors:</strong>
@@ -253,7 +252,6 @@
         const connectBtn = document.getElementById('connectBtn');
         const syncBtn = document.getElementById('syncBtn');
         const getBtn = document.getElementById('getBtn');
-        const doneBtn = document.getElementById('doneBtn');
         const logEl = document.getElementById('log');
         
         function log(msg) {
@@ -277,7 +275,6 @@
                 connected = true;
                 statusEl.textContent = 'Connected! Sending PING...';
                 statusEl.className = 'status waiting';
-                connectBtn.textContent = 'Disconnect';
                 
                 log('USB connected');
                 
@@ -314,16 +311,13 @@
             pingSent = false;
             statusEl.textContent = 'Disconnected. Double-click button during boot to sync again.';
             statusEl.className = 'status disconnected';
-            resetButtons();
-            log('Disconnected');
-        }
-        
-        function resetButtons() {
             connectBtn.textContent = 'Connect';
             syncBtn.disabled = true;
             getBtn.disabled = true;
-            doneBtn.disabled = true;
+            log('Disconnected');
         }
+        
+
         
         async function sendCommand(cmd) {
             if (!writer) return;
@@ -353,10 +347,9 @@
             await sendCommand('PONG');
             statusEl.textContent = 'Exiting sync mode...';
             log('Sent PONG - device should exit to TIMER MODE');
-            // Disable buttons until we get confirmation or timeout
+            // Disable action buttons until we get confirmation or timeout
             syncBtn.disabled = true;
             getBtn.disabled = true;
-            doneBtn.disabled = true;
         }
         
         async function readLoop() {
@@ -396,20 +389,20 @@
                 if (pingSent) {
                     // This is response to our PING
                     pingSent = false;
-                    statusEl.textContent = 'Device ready. You can now SYNC, GET, or click Done.';
+                    statusEl.textContent = 'Device ready. You can now SYNC, GET, or click Done to exit.';
                     statusEl.className = 'status connected';
+                    connectBtn.textContent = 'Done (PONG)';
                     syncBtn.disabled = false;
                     getBtn.disabled = false;
-                    doneBtn.disabled = false;
                     log('Handshake complete - ready for commands');
                 } else {
                     // This is response to our final PONG - device is exiting
                     statusEl.textContent = 'Sync complete. Device returned to TIMER MODE.';
                     statusEl.className = 'status connected';
                     log('Device exited sync mode');
+                    connectBtn.textContent = 'Connect';
                     syncBtn.disabled = true;
                     getBtn.disabled = true;
-                    doneBtn.disabled = true;
                 }
             } else if (msg.startsWith('SETTINGS:')) {
                 // Parse settings from device
@@ -460,13 +453,12 @@
             if (!connected) {
                 connect();
             } else {
-                disconnect();
+                sendDone();
             }
         });
         
         syncBtn.addEventListener('click', sendSync);
         getBtn.addEventListener('click', sendGet);
-        doneBtn.addEventListener('click', sendDone);
         
         // Check for Web Serial API support
         if (!('serial' in navigator)) {
