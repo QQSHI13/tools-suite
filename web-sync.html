@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M5Capsule Pomodoro Sync</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍅</text></svg>">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 420px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #58a6ff;
+        }
+        .subtitle {
+            color: #8b949e;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .status {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        .status.disconnected {
+            background: #3d1100;
+            color: #ff7b72;
+        }
+        .status.connected {
+            background: #0d2d0d;
+            color: #7ee787;
+        }
+        .status.waiting {
+            background: #1e3a5f;
+            color: #79c0ff;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            color: #8b949e;
+            margin-bottom: 6px;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 16px;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #58a6ff;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover:not(:disabled) {
+            background: #2ea043;
+        }
+        button.secondary {
+            background: #1f6feb;
+            margin-top: 8px;
+        }
+        button.secondary:hover:not(:disabled) {
+            background: #388bfd;
+        }
+        button:disabled {
+            background: #30363d;
+            color: #8b949e;
+            cursor: not-allowed;
+        }
+        .log {
+            margin-top: 24px;
+            padding: 12px;
+            background: #0d1117;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #8b949e;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .instructions {
+            margin-top: 24px;
+            padding: 16px;
+            background: #0d1117;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #8b949e;
+        }
+        .instructions ol {
+            margin-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        .legend {
+            margin-top: 16px;
+            padding: 12px;
+            background: #0d1117;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .dot.work { background: #f85149; }
+        .dot.break { background: #3fb950; }
+        .dot.long { background: #58a6ff; }
+        .dot.sync { background: #ff5000; animation: pulse 1s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>☄️ M5Capsule Sync</h1>
+        <p class="subtitle">Sync settings with your Pomodoro Timer</p>
+        
+        <div id="status" class="status disconnected">
+            Not connected. Double-click button during 5s boot window to enter sync mode.
+            <br><small>Requires Chrome/Edge with Web Serial API support.</small>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="workMinutes">Work (min)</label>
+                <input type="number" id="workMinutes" min="1" max="60" value="25">
+            </div>
+            <div class="form-group">
+                <label for="breakMinutes">Short Break (min)</label>
+                <input type="number" id="breakMinutes" min="1" max="30" value="5">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="longBreakMinutes">Long Break (min)</label>
+                <input type="number" id="longBreakMinutes" min="5" max="60" value="15">
+            </div>
+            <div class="form-group">
+                <label for="workSessions">Sessions before Long</label>
+                <input type="number" id="workSessions" min="2" max="10" value="4">
+            </div>
+        </div>
+        
+        <div class="checkbox-group">
+            <input type="checkbox" id="soundEnabled" checked>
+            <label for="soundEnabled">Enable buzzer sounds</label>
+        </div>
+        
+        <button id="connectBtn">Connect</button>
+        <button id="syncBtn" class="secondary" disabled>Send Settings (SYNC)</button>
+        <button id="getBtn" class="secondary" disabled>Load from Device (GET)</button>
+        <button id="doneBtn" class="secondary" disabled>Done (PONG)</button>
+        
+        <div class="legend">
+            <strong>LED Colors:</strong>
+            <div class="legend-item"><span class="dot work"></span> Red = Work</div>
+            <div class="legend-item"><span class="dot break"></span> Green = Short Break</div>
+            <div class="legend-item"><span class="dot long"></span> Blue = Long Break</div>
+            <div class="legend-item"><span class="dot sync"></span> Orange = Sync Mode</div>
+            <div class="legend-item" style="margin-top:4px; font-size:11px; color:#8b949e;">
+                White = Boot mode (5s window for sync)
+            </div>
+        </div>
+        
+        <div id="log" class="log"></div>
+        
+        <div class="instructions">
+            <strong>How to sync:</strong>
+            <ol>
+                <li>Double-click the button during the 5s white LED boot window</li>
+                <li>Device enters SYNC mode (blue LED)</li>
+                <li>Click "Connect" above (requires Chrome/Edge)</li>
+                <li>Adjust settings and click "Send Settings"</li>
+                <li>Click "Done" when finished to exit sync mode</li>
+            </ol>
+            <p><strong>Protocol:</strong> PING → PONG → [SYNC/GET] → PONG (exit)</p>
+            <p><strong>Commands:</strong> PING, PONG, GET, SYNC:key=val,..., RESET</p>
+        </div>
+    </div>
+
+    <script>
+        let port = null;
+        let reader = null;
+        let writer = null;
+        let connected = false;
+        let pingSent = false;
+        
+        const statusEl = document.getElementById('status');
+        const connectBtn = document.getElementById('connectBtn');
+        const syncBtn = document.getElementById('syncBtn');
+        const getBtn = document.getElementById('getBtn');
+        const doneBtn = document.getElementById('doneBtn');
+        const logEl = document.getElementById('log');
+        
+        function log(msg) {
+            const line = document.createElement('div');
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.appendChild(line);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+        
+        async function connect() {
+            try {
+                port = await navigator.serial.requestPort({
+                    filters: [{ usbVendorId: 0x303A }] // ESP32-S3 native USB VID
+                });
+                
+                await port.open({ baudRate: 115200 });
+                
+                reader = port.readable.getReader();
+                writer = port.writable.getWriter();
+                
+                connected = true;
+                statusEl.textContent = 'Connected! Sending PING...';
+                statusEl.className = 'status waiting';
+                connectBtn.textContent = 'Disconnect';
+                
+                log('USB connected');
+                
+                // Start reading
+                readLoop();
+                
+                // Start protocol: Send PING
+                await sendCommand('PING');
+                pingSent = true;
+                
+            } catch (err) {
+                log('Error: ' + err.message);
+                statusEl.textContent = 'Connection failed: ' + err.message;
+                statusEl.className = 'status disconnected';
+                connected = false;
+                resetButtons();
+            }
+        }
+        
+        async function disconnect() {
+            if (reader) {
+                await reader.cancel();
+                reader = null;
+            }
+            if (writer) {
+                await writer.close();
+                writer = null;
+            }
+            if (port) {
+                await port.close();
+                port = null;
+            }
+            connected = false;
+            pingSent = false;
+            statusEl.textContent = 'Disconnected. Double-click button during boot to sync again.';
+            statusEl.className = 'status disconnected';
+            resetButtons();
+            log('Disconnected');
+        }
+        
+        function resetButtons() {
+            connectBtn.textContent = 'Connect';
+            syncBtn.disabled = true;
+            getBtn.disabled = true;
+            doneBtn.disabled = true;
+        }
+        
+        async function sendCommand(cmd) {
+            if (!writer) return;
+            const encoder = new TextEncoder();
+            await writer.write(encoder.encode(cmd + '\n'));
+            log('→ ' + cmd);
+        }
+        
+        async function sendSync() {
+            const work = document.getElementById('workMinutes').value;
+            const brk = document.getElementById('breakMinutes').value;
+            const longBrk = document.getElementById('longBreakMinutes').value;
+            const sessions = document.getElementById('workSessions').value;
+            const sound = document.getElementById('soundEnabled').checked ? 1 : 0;
+            
+            const command = `SYNC:work=${work},break=${brk},longBreak=${longBrk},sessions=${sessions},sound=${sound}`;
+            await sendCommand(command);
+            statusEl.textContent = 'Settings sent. Device stays in sync mode.';
+        }
+        
+        async function sendGet() {
+            await sendCommand('GET');
+            statusEl.textContent = 'Requesting settings from device...';
+        }
+        
+        async function sendDone() {
+            await sendCommand('PONG');
+            statusEl.textContent = 'Exiting sync mode...';
+            log('Sent PONG - device should exit to TIMER MODE');
+            // Disable buttons until we get confirmation or timeout
+            syncBtn.disabled = true;
+            getBtn.disabled = true;
+            doneBtn.disabled = true;
+        }
+        
+        async function readLoop() {
+            const decoder = new TextDecoder();
+            let buffer = '';
+            
+            while (port && port.readable) {
+                try {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Keep incomplete line
+                    
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (trimmed) {
+                            log('← ' + trimmed);
+                            await handleMessage(trimmed);
+                        }
+                    }
+                } catch (err) {
+                    log('Read error: ' + err.message);
+                    break;
+                }
+            }
+            
+            // Connection closed
+            if (connected) {
+                await disconnect();
+            }
+        }
+        
+        async function handleMessage(msg) {
+            if (msg === 'PONG') {
+                if (pingSent) {
+                    // This is response to our PING
+                    pingSent = false;
+                    statusEl.textContent = 'Device ready. You can now SYNC, GET, or click Done.';
+                    statusEl.className = 'status connected';
+                    syncBtn.disabled = false;
+                    getBtn.disabled = false;
+                    doneBtn.disabled = false;
+                    log('Handshake complete - ready for commands');
+                } else {
+                    // This is response to our final PONG - device is exiting
+                    statusEl.textContent = 'Sync complete. Device returned to TIMER MODE.';
+                    statusEl.className = 'status connected';
+                    log('Device exited sync mode');
+                    syncBtn.disabled = true;
+                    getBtn.disabled = true;
+                    doneBtn.disabled = true;
+                }
+            } else if (msg.startsWith('SETTINGS:')) {
+                // Parse settings from device
+                const settingsStr = msg.substring(9);
+                log('Received settings: ' + settingsStr);
+                parseSettings(settingsStr);
+                statusEl.textContent = 'Settings loaded from device.';
+            } else if (msg === 'SYNC received') {
+                statusEl.textContent = 'Settings synced. Device stays in sync mode.';
+            } else if (msg === 'Settings reset to defaults') {
+                statusEl.textContent = 'Settings reset to defaults.';
+            } else if (msg.startsWith('USB CMD:')) {
+                // Echo from device, ignore
+            } else if (msg.startsWith('PING received')) {
+                // Status message from device
+            } else {
+                // Other status messages from device
+                log('Device: ' + msg);
+            }
+        }
+        
+        function parseSettings(str) {
+            // Parse work=25,break=5,longBreak=15,sessions=4,sound=1
+            const parts = str.split(',');
+            for (const part of parts) {
+                const [key, value] = part.split('=');
+                switch(key) {
+                    case 'work':
+                        document.getElementById('workMinutes').value = parseInt(value);
+                        break;
+                    case 'break':
+                        document.getElementById('breakMinutes').value = parseInt(value);
+                        break;
+                    case 'longBreak':
+                        document.getElementById('longBreakMinutes').value = parseInt(value);
+                        break;
+                    case 'sessions':
+                        document.getElementById('workSessions').value = parseInt(value);
+                        break;
+                    case 'sound':
+                        document.getElementById('soundEnabled').checked = parseInt(value) !== 0;
+                        break;
+                }
+            }
+        }
+        
+        connectBtn.addEventListener('click', () => {
+            if (!connected) {
+                connect();
+            } else {
+                disconnect();
+            }
+        });
+        
+        syncBtn.addEventListener('click', sendSync);
+        getBtn.addEventListener('click', sendGet);
+        doneBtn.addEventListener('click', sendDone);
+        
+        // Check for Web Serial API support
+        if (!('serial' in navigator)) {
+            statusEl.textContent = 'Web Serial not supported. Use Chrome/Edge on desktop.';
+            connectBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>
