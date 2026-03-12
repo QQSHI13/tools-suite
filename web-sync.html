@@ -312,6 +312,7 @@
             statusEl.textContent = 'Disconnected. Double-click button during boot to sync again.';
             statusEl.className = 'status disconnected';
             connectBtn.textContent = 'Connect';
+            connectBtn.disabled = false;
             syncBtn.disabled = true;
             getBtn.disabled = true;
             log('Disconnected');
@@ -347,7 +348,8 @@
             await sendCommand('PONG');
             statusEl.textContent = 'Exiting sync mode...';
             log('Sent PONG - device should exit to TIMER MODE');
-            // Disable action buttons until we get confirmation or timeout
+            // Disable all buttons until we get confirmation or timeout
+            connectBtn.disabled = true;
             syncBtn.disabled = true;
             getBtn.disabled = true;
         }
@@ -398,11 +400,15 @@
                 } else {
                     // This is response to our final PONG - device is exiting
                     statusEl.textContent = 'Sync complete. Device returned to TIMER MODE.';
-                    statusEl.className = 'status connected';
+                    statusEl.className = 'status disconnected';
                     log('Device exited sync mode');
                     connectBtn.textContent = 'Connect';
+                    connectBtn.disabled = false;
                     syncBtn.disabled = true;
                     getBtn.disabled = true;
+                    // Reset state so button works for new connection
+                    connected = false;
+                    pingSent = false;
                 }
             } else if (msg.startsWith('SETTINGS:')) {
                 // Parse settings from device
