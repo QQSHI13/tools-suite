@@ -173,12 +173,12 @@
     <header>
         <h1>🌳 JSON Visualizer</h1>
         <div class="toolbar">
-            <button onclick="formatJSON()">Format</button>
-            <button onclick="minifyJSON()">Minify</button>
-            <button onclick="expandAll()">Expand All</button>
-            <button onclick="collapseAll()">Collapse All</button>
-            <button class="primary" onclick="copyJSON()">Copy</button>
-            <button onclick="clearJSON()">Clear</button>
+            <button onclick="formatJSON()" aria-label="Format JSON" tabindex="0">Format</button>
+            <button onclick="minifyJSON()" aria-label="Minify JSON" tabindex="0">Minify</button>
+            <button onclick="expandAll()" aria-label="Expand all nodes" tabindex="0">Expand All</button>
+            <button onclick="collapseAll()" aria-label="Collapse all nodes" tabindex="0">Collapse All</button>
+            <button class="primary" onclick="copyJSON()" aria-label="Copy JSON to clipboard" tabindex="0">Copy</button>
+            <button onclick="clearJSON()" aria-label="Clear JSON input" tabindex="0">Clear</button>
         </div>
     </header>
     <div class="error-bar" id="errorBar"></div>
@@ -421,14 +421,6 @@
             
             return maxDepth;
         }
-
-        function updateStats(bytes, nodes, depth) {
-            document.getElementById('byteSize').textContent = formatBytes(bytes);
-            document.getElementById('nodeCount').textContent = nodes;
-            document.getElementById('maxDepth').textContent = depth;
-        }
-
-
 
         // Update stats uses Utils.formatBytes
         function updateStats(bytes, nodes, depth) {

@@ -77,10 +77,10 @@ function loadFromURL() {
         const original = params.get('original');
         const modified = params.get('modified');
         if (original !== null) {
-            originalInput.value = decodeURIComponent(escape(atob(original)));
+            originalInput.value = new TextDecoder().decode(Uint8Array.from(atob(original), c => c.charCodeAt(0)));
         }
         if (modified !== null) {
-            modifiedInput.value = decodeURIComponent(escape(atob(modified)));
+            modifiedInput.value = new TextDecoder().decode(Uint8Array.from(atob(modified), c => c.charCodeAt(0)));
         }
     } catch (e) {
         console.error('Failed to load from URL:', e);
@@ -95,8 +95,8 @@ function updateURL() {
             window.history.replaceState({}, '', window.location.pathname);
             return;
         }
-        const originalEncoded = btoa(unescape(encodeURIComponent(original)));
-        const modifiedEncoded = btoa(unescape(encodeURIComponent(modified)));
+        const originalEncoded = btoa(String.fromCharCode(...new TextEncoder().encode(original)));
+        const modifiedEncoded = btoa(String.fromCharCode(...new TextEncoder().encode(modified)));
         const params = new URLSearchParams();
         if (original) params.set('original', originalEncoded);
         if (modified) params.set('modified', modifiedEncoded);

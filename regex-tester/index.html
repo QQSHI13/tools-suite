@@ -278,7 +278,7 @@ URL: https://github.com/QQSHI13</textarea>
             { name: 'Word', pattern: '\\b\\w+\\b', flags: 'g', desc: 'Match whole words' },
             { name: 'Number', pattern: '\\b\\d+\\b', flags: 'g', desc: 'Match integers' },
             { name: 'Credit Card', pattern: '\\b(?:\\d{4}[-\\s]?){3}\\d{4}\\b', flags: 'g', desc: 'Match credit card numbers' },
-            { name: 'HTML Tag', pattern: '<[^\u003e]+>', flags: 'g', desc: 'Match HTML tags' },
+            { name: 'HTML Tag', pattern: '<[^>]+>', flags: 'g', desc: 'Match HTML tags' },
             { name: 'Quoted String', pattern: '"[^"]*"', flags: 'g', desc: 'Match double-quoted strings' },
             { name: 'Markdown Link', pattern: '\\[([^\\]]+)\\]\\(([^)]+)\\)', flags: 'g', desc: 'Match [text](url) links' }
         ];

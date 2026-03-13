@@ -267,11 +267,11 @@
             <div class="card">
                 <h2>Color Harmonies</h2>
                 <div class="harmonies">
-                    <button class="harmony-btn active" onclick="generateHarmony('complementary')">Complementary</button>
-                    <button class="harmony-btn" onclick="generateHarmony('analogous')">Analogous</button>
-                    <button class="harmony-btn" onclick="generateHarmony('triadic')">Triadic</button>
-                    <button class="harmony-btn" onclick="generateHarmony('split')">Split Comp.</button>
-                    <button class="harmony-btn" onclick="generateHarmony('square')">Square</button>
+                    <button class="harmony-btn active" onclick="generateHarmony('complementary', event)">Complementary</button>
+                    <button class="harmony-btn" onclick="generateHarmony('analogous', event)">Analogous</button>
+                    <button class="harmony-btn" onclick="generateHarmony('triadic', event)">Triadic</button>
+                    <button class="harmony-btn" onclick="generateHarmony('split', event)">Split Comp.</button>
+                    <button class="harmony-btn" onclick="generateHarmony('square', event)">Square</button>
                 </div>
                 <div class="palette-grid" id="harmonyPalette"></div>
             </div>
@@ -404,10 +404,15 @@
             `).join('');
         }
 
-        function generateHarmony(type) {
+        function generateHarmony(type, event) {
             currentHarmony = type;
             document.querySelectorAll('.harmony-btn').forEach(btn => btn.classList.remove('active'));
-            event?.target?.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                const btn = document.querySelector(`button[onclick*="generateHarmony('${type}'"]`);
+                if (btn) btn.classList.add('active');
+            }
 
             const rgb = hexToRgb(currentColor);
             const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
