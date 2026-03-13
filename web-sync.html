@@ -72,9 +72,34 @@
             color: #c9d1d9;
             font-size: 16px;
         }
-        input[type="number"]:focus {
+        input[type="number"]:focus, input[type="range"]:focus {
             outline: none;
             border-color: #58a6ff;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #58a6ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .slider-value {
+            display: inline-block;
+            min-width: 40px;
+            text-align: right;
+            color: #58a6ff;
+            font-weight: 500;
         }
         .form-row {
             display: grid;
@@ -177,12 +202,12 @@
     <div class="container">
         <h1>☄️ M5Capsule Sync</h1>
         <p class="subtitle">Sync settings with your Pomodoro Timer</p>
-
+        
         <div id="status" class="status disconnected">
             Not connected. Double-click button during 5s boot window to enter sync mode.
             <br><small>Requires Chrome/Edge with Web Serial API support.</small>
         </div>
-
+        
         <div class="form-row">
             <div class="form-group">
                 <label for="workMinutes">Work (min)</label>
@@ -193,7 +218,7 @@
                 <input type="number" id="breakMinutes" min="1" max="30" value="5">
             </div>
         </div>
-
+        
         <div class="form-row">
             <div class="form-group">
                 <label for="longBreakMinutes">Long Break (min)</label>
@@ -204,16 +229,26 @@
                 <input type="number" id="workSessions" min="2" max="10" value="4">
             </div>
         </div>
-
+        
         <div class="checkbox-group">
             <input type="checkbox" id="soundEnabled" checked>
             <label for="soundEnabled">Enable buzzer sounds</label>
         </div>
-
-        <button id="connectBtn" aria-label="Connect to serial device" tabindex="0">Connect</button>
-        <button id="syncBtn" class="secondary" disabled aria-label="Send settings to device" tabindex="0">Send Settings (SYNC)</button>
-        <button id="getBtn" class="secondary" disabled aria-label="Load settings from device" tabindex="0">Load from Device (GET)</button>
-
+        
+        <div class="form-group">
+            <label for="ledBrightness">LED Brightness: <span class="slider-value" id="ledValue">24</span></label>
+            <input type="range" id="ledBrightness" min="0" max="255" value="24">
+        </div>
+        
+        <div class="form-group">
+            <label for="buzzerVolume">Buzzer Volume: <span class="slider-value" id="volValue">64</span></label>
+            <input type="range" id="buzzerVolume" min="0" max="255" value="64">
+        </div>
+        
+        <button id="connectBtn">Connect</button>
+        <button id="syncBtn" class="secondary" disabled>Send Settings (SYNC)</button>
+        <button id="getBtn" class="secondary" disabled>Load from Device (GET)</button>
+        
         <div class="legend">
             <strong>LED Colors:</strong>
             <div class="legend-item"><span class="dot work"></span> Red = Work</div>
@@ -224,9 +259,9 @@
                 White = Boot mode (5s window for sync)
             </div>
         </div>
-
+        
         <div id="log" class="log"></div>
-
+        
         <div class="instructions">
             <strong>How to sync:</strong>
             <ol>
@@ -247,13 +282,13 @@
         let writer = null;
         let connected = false;
         let pingSent = false;
-
+        
         const statusEl = document.getElementById('status');
         const connectBtn = document.getElementById('connectBtn');
         const syncBtn = document.getElementById('syncBtn');
         const getBtn = document.getElementById('getBtn');
         const logEl = document.getElementById('log');
-
+        
         function log(msg) {
             const line = document.createElement('div');
             line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
@@ -261,30 +296,38 @@
             logEl.scrollTop = logEl.scrollHeight;
         }
 
+        // Slider value display updates
+        document.getElementById('ledBrightness').addEventListener('input', function() {
+            document.getElementById('ledValue').textContent = this.value;
+        });
+        document.getElementById('buzzerVolume').addEventListener('input', function() {
+            document.getElementById('volValue').textContent = this.value;
+        });
+        
         async function connect() {
             try {
                 port = await navigator.serial.requestPort({
                     filters: [{ usbVendorId: 0x303A }] // ESP32-S3 native USB VID
                 });
-
+                
                 await port.open({ baudRate: 115200 });
-
+                
                 reader = port.readable.getReader();
                 writer = port.writable.getWriter();
-
+                
                 connected = true;
                 statusEl.textContent = 'Connected! Sending PING...';
                 statusEl.className = 'status waiting';
-
+                
                 log('USB connected');
-
+                
                 // Start reading
                 readLoop();
-
+                
                 // Start protocol: Send PING
                 await sendCommand('PING');
                 pingSent = true;
-
+                
             } catch (err) {
                 log('Error: ' + err.message);
                 statusEl.textContent = 'Connection failed: ' + err.message;
@@ -293,14 +336,7 @@
                 resetButtons();
             }
         }
-
-        function resetButtons() {
-            connectBtn.textContent = 'Connect';
-            connectBtn.disabled = false;
-            syncBtn.disabled = true;
-            getBtn.disabled = true;
-        }
-
+        
         async function disconnect() {
             if (reader) {
                 await reader.cancel();
@@ -324,33 +360,35 @@
             getBtn.disabled = true;
             log('Disconnected');
         }
+        
 
-
-
+        
         async function sendCommand(cmd) {
             if (!writer) return;
             const encoder = new TextEncoder();
             await writer.write(encoder.encode(cmd + '\n'));
             log('→ ' + cmd);
         }
-
+        
         async function sendSync() {
             const work = document.getElementById('workMinutes').value;
             const brk = document.getElementById('breakMinutes').value;
             const longBrk = document.getElementById('longBreakMinutes').value;
             const sessions = document.getElementById('workSessions').value;
             const sound = document.getElementById('soundEnabled').checked ? 1 : 0;
-
-            const command = `SYNC:work=${work},break=${brk},longBreak=${longBrk},sessions=${sessions},sound=${sound}`;
+            const ledBright = document.getElementById('ledBrightness').value;
+            const buzzVol = document.getElementById('buzzerVolume').value;
+            
+            const command = `SYNC:work=${work},break=${brk},longBreak=${longBrk},sessions=${sessions},sound=${sound},ledBright=${ledBright},buzzVol=${buzzVol}`;
             await sendCommand(command);
             statusEl.textContent = 'Settings sent. Device stays in sync mode.';
         }
-
+        
         async function sendGet() {
             await sendCommand('GET');
             statusEl.textContent = 'Requesting settings from device...';
         }
-
+        
         async function sendDone() {
             await sendCommand('PONG');
             statusEl.textContent = 'Exiting sync mode...';
@@ -360,20 +398,20 @@
             syncBtn.disabled = true;
             getBtn.disabled = true;
         }
-
+        
         async function readLoop() {
             const decoder = new TextDecoder();
             let buffer = '';
-
+            
             while (port && port.readable) {
                 try {
                     const { value, done } = await reader.read();
                     if (done) break;
-
+                    
                     buffer += decoder.decode(value, { stream: true });
                     const lines = buffer.split('\n');
                     buffer = lines.pop(); // Keep incomplete line
-
+                    
                     for (const line of lines) {
                         const trimmed = line.trim();
                         if (trimmed) {
@@ -386,13 +424,13 @@
                     break;
                 }
             }
-
+            
             // Connection closed
             if (connected) {
                 await disconnect();
             }
         }
-
+        
         async function handleMessage(msg) {
             if (msg === 'PONG') {
                 if (pingSent) {
@@ -436,9 +474,9 @@
                 log('Device: ' + msg);
             }
         }
-
+        
         function parseSettings(str) {
-            // Parse work=25,break=5,longBreak=15,sessions=4,sound=1
+            // Parse work=25,break=5,longBreak=15,sessions=4,sound=1,ledBright=24,buzzVol=64
             const parts = str.split(',');
             for (const part of parts) {
                 const [key, value] = part.split('=');
@@ -458,10 +496,18 @@
                     case 'sound':
                         document.getElementById('soundEnabled').checked = parseInt(value) !== 0;
                         break;
+                    case 'ledBright':
+                        document.getElementById('ledBrightness').value = parseInt(value);
+                        document.getElementById('ledValue').textContent = value;
+                        break;
+                    case 'buzzVol':
+                        document.getElementById('buzzerVolume').value = parseInt(value);
+                        document.getElementById('volValue').textContent = value;
+                        break;
                 }
             }
         }
-
+        
         connectBtn.addEventListener('click', () => {
             if (!connected) {
                 connect();
@@ -469,10 +515,10 @@
                 sendDone();
             }
         });
-
+        
         syncBtn.addEventListener('click', sendSync);
         getBtn.addEventListener('click', sendGet);
-
+        
         // Check for Web Serial API support
         if (!('serial' in navigator)) {
             statusEl.textContent = 'Web Serial not supported. Use Chrome/Edge on desktop.';
