@@ -935,7 +935,17 @@
             
             pairs.forEach(pair => {
                 if (!pair) return;
-                const [key, value = ''] = pair.split('=').map(decodeURIComponent);
+                let key, value = '';
+                try {
+                    const parts = pair.split('=');
+                    key = decodeURIComponent(parts[0] || '');
+                    value = parts.length > 1 ? decodeURIComponent(parts[1]) : '';
+                } catch (e) {
+                    // If decoding fails, use raw values
+                    const parts = pair.split('=');
+                    key = parts[0] || '';
+                    value = parts.length > 1 ? parts[1] : '';
+                }
                 const row = document.createElement('div');
                 row.className = 'query-param-row';
                 row.innerHTML = `
@@ -991,6 +1001,21 @@
                 return new TextDecoder().decode(bytes);
             }
         }
+        
+        /**
+         * Escape path/filename using base64 encoding for collision resistance.
+         * More reliable than simple character replacement for special characters.
+         * @param {string} path - Path or filename to escape
+         * @returns {string} Base64-encoded safe filename
+         */
+        function escapePath(path) {
+            if (!path) return '';
+            // Use base64url encoding (RFC 4648) which is filename-safe
+            const base64 = safeBtoa(path);
+            // Convert standard base64 to base64url (replace + → -, / → _, remove =)
+            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+        }
+        
         
         function applyAuth() {
             const user = document.getElementById('authUser').value;
@@ -1119,7 +1144,7 @@
                     headers: headers
                 };
                 
-                if (['POST', 'PUT', 'PATCH'].includes(method) && body) {
+                if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && body) {
                     options.body = body;
                 }
                 
@@ -1387,21 +1412,26 @@
             const blob = new Blob([currentResponseText], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const timestamp = new Date().toISOString();
+            const safeTimestamp = escapePath(timestamp);
             a.href = url;
-            a.download = `response-${timestamp}.json`;
+            a.download = `response-${safeTimestamp}.json`;
             a.click();
             URL.revokeObjectURL(url);
             showToast('Response exported!');
         }
         
-        function copyResponse() {
+        async function copyResponse() {
             if (!currentResponseText) {
                 showToast('No response to copy');
                 return;
             }
-            navigator.clipboard.writeText(currentResponseText);
-            showToast('Response copied to clipboard!');
+            try {
+                await navigator.clipboard.writeText(currentResponseText);
+                showToast('Response copied to clipboard!');
+            } catch (err) {
+                showToast('Failed to copy: ' + err.message);
+            }
         }
         
         function toggleTheme() {
@@ -1540,6 +1570,14 @@ ntListener('statechange', () => {
             });
 
             // Auto-refresh when controller changes (after skipWaiting)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
+nges (after skipWaiting)
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 window.location.reload();
             });
