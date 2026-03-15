@@ -1236,11 +1236,22 @@
         
         // History
         function addToHistory(method, url, status) {
+            // Collect headers
+            const headers = [];
+            document.querySelectorAll('#headersList .header-row').forEach(row => {
+                const inputs = row.querySelectorAll('input');
+                if (inputs[0].value.trim()) {
+                    headers.push({ name: inputs[0].value.trim(), value: inputs[1].value });
+                }
+            });
+            
             const entry = {
                 method,
                 url,
                 status,
-                time: Date.now()
+                time: Date.now(),
+                body: document.getElementById('body').value,
+                headers: headers
             };
             
             // Add to beginning, limit to 50
@@ -1289,6 +1300,28 @@
             const item = requestHistory[index];
             document.getElementById('url').value = item.url;
             document.getElementById('method').value = item.method;
+            
+            // Restore body if available
+            if (item.body !== undefined) {
+                document.getElementById('body').value = item.body;
+            }
+            
+            // Restore headers if available
+            if (item.headers && item.headers.length > 0) {
+                const headersList = document.getElementById('headersList');
+                headersList.innerHTML = '';
+                item.headers.forEach(h => {
+                    const row = document.createElement('div');
+                    row.className = 'header-row';
+                    row.innerHTML = `
+                        <input type="text" class="header-input" placeholder="Header" list="common-headers" value="${escapeHtml(h.name)}" aria-label="Header name">
+                        <input type="text" class="header-input" placeholder="Value" value="${escapeHtml(h.value)}" aria-label="Header value">
+                        <button class="delete-btn" onclick="removeHeader(this)" aria-label="Remove header">✕</button>
+                    `;
+                    headersList.appendChild(row);
+                });
+            }
+            
             parseUrlParams();
         }
         
@@ -1456,15 +1489,43 @@
     <script>
         // Service Worker registration with auto-refresh on hard reload
         if ('serviceWorker' in navigator) {
-            // Detect hard reload (Ctrl+Shift+R or Cmd+Shift+R)
-            const isHardReload = performance.navigation.type === 1 && 
-                (performance.navigation.redirectCount === 0);
+            // Detect hard reload using Navigation Timing API
+            let isHardReload = false;
+            if (performance.getEntriesByType && performance.getEntriesByType('navigation').length > 0) {
+                const navEntry = performance.getEntriesByType('navigation')[0];
+                isHardReload = navEntry.type === 'reload';
+            } else if (performance.navigation) {
+                // Fallback for older browsers
+                isHardReload = performance.navigation.type === 1;
+            }
             
             navigator.serviceWorker.register('sw.js').then((registration) => {
                 // Handle updates
                 registration.addEventListener('updatefound', () => {
                     const newWorker = registration.installing;
                     newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New version available, skip waiting
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                    });
+                });
+
+                // If hard reload, tell SW to fetch fresh
+                if (isHardReload && registration.active) {
+                    registration.active.postMessage({ type: 'HARD_RELOAD' });
+                }
+            });
+
+            // Auto-refresh when controller changes (after skipWaiting)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
+ntListener('statechange', () => {
                         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                             // New version available, skip waiting
                             newWorker.postMessage({ type: 'SKIP_WAITING' });
