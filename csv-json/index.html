@@ -333,15 +333,31 @@
 
             const delimiter = text.includes('\t') ? '\t' : ',';
             
-            const parseLine = (line) => {
+            // FIX: Add safety limits to prevent hangs from malformed CSV
+            const MAX_LINE_LENGTH = 100000; // 100KB per line limit
+            const MAX_FIELDS = 10000; // Maximum fields per row
+            
+            const parseLine = (line, lineIndex) => {
+                // Safety check: reject extremely long lines
+                if (line.length > MAX_LINE_LENGTH) {
+                    throw new Error(`Line ${lineIndex + 1} exceeds maximum length of ${MAX_LINE_LENGTH} characters`);
+                }
+                
                 const result = [];
                 let current = '';
                 let inQuotes = false;
+                let quoteCount = 0;
+                const MAX_QUOTES = 10000; // Prevent runaway quote parsing
                 
                 for (let i = 0; i < line.length; i++) {
                     const char = line[i];
                     
                     if (char === '"') {
+                        quoteCount++;
+                        // FIX: Add limit for quote escape to prevent infinite loops
+                        if (quoteCount > MAX_QUOTES) {
+                            throw new Error(`Line ${lineIndex + 1} has too many quote characters (possible malformed CSV)`);
+                        }
                         if (inQuotes && line[i + 1] === '"') {
                             current += '"';
                             i++;
@@ -351,15 +367,25 @@
                     } else if (char === delimiter && !inQuotes) {
                         result.push(current);
                         current = '';
+                        // Safety check: limit number of fields
+                        if (result.length > MAX_FIELDS) {
+                            throw new Error(`Line ${lineIndex + 1} exceeds maximum of ${MAX_FIELDS} fields`);
+                        }
                     } else {
                         current += char;
                     }
                 }
                 result.push(current);
+                
+                // Warn about unclosed quotes (malformed CSV)
+                if (inQuotes) {
+                    throw new Error(`Line ${lineIndex + 1} has unclosed quote (missing closing ")`);
+                }
+                
                 return result;
             };
 
-            const rows = lines.map(parseLine);
+            const rows = lines.map((line, idx) => parseLine(line, idx));
             const headers = rows[0];
             // Filter out empty rows (rows where all fields are empty)
             const data = rows.slice(1).filter(row => row.some(cell => cell.trim() !== ''));
@@ -542,8 +568,10 @@
         // Service Worker registration with auto-refresh on hard reload
         if ('serviceWorker' in navigator) {
             // Detect hard reload (Ctrl+Shift+R or Cmd+Shift+R)
-            const isHardReload = performance.navigation.type === 1 && 
-                (performance.navigation.redirectCount === 0);
+            // FIX: Replace deprecated performance.navigation with PerformanceNavigationTiming API
+            const navEntry = performance.getEntriesByType('navigation')[0];
+            const isHardReload = navEntry && navEntry.type === 'reload' && 
+                (navEntry.redirectCount === 0);
             
             navigator.serviceWorker.register('sw.js').then((registration) => {
                 // Handle updates

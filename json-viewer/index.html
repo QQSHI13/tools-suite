@@ -272,7 +272,7 @@
             }
 
             const keys = Object.keys(data);
-            if (keys.length === 0) return `{}${isLast ? '' : ','}`;
+            if (keys.length === 0) return `{}` + (isLast ? '' : ',');
             const currentPath = path || `n${nodeIdCounter++}`;
             const safePath = escapePath(currentPath);
             let html = `<span class="toggle-btn" onclick="toggleNode('${safePath}')">▼</span>{<span class="json-number">${keys.length}</span>}\n`;
@@ -423,8 +423,9 @@
         }
 
         // Update stats uses Utils.formatBytes
-        function updateStats(bytes, nodes, depth) {
-            document.getElementById('byteSize').textContent = Utils.formatBytes(bytes);
+        function updateStats(textLength, nodes, depth) {
+            const byteSize = new Blob([input.value]).size;
+            document.getElementById('byteSize').textContent = Utils.formatBytes(byteSize);
             document.getElementById('nodeCount').textContent = nodes;
             document.getElementById('maxDepth').textContent = depth;
         }
@@ -480,6 +481,12 @@
             // Auto-refresh when controller changes (after skipWaiting)
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 window.location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
+tion.reload();
             });
         }
     </script>

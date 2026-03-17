@@ -410,7 +410,8 @@
             if (event && event.target) {
                 event.target.classList.add('active');
             } else {
-                const btn = document.querySelector(`button[onclick*="generateHarmony('${type}'"]`);
+                // FIX: Corrected selector syntax - was missing closing parenthesis in attribute selector
+                const btn = document.querySelector(`button[onclick*="generateHarmony('${type}')"]`);
                 if (btn) btn.classList.add('active');
             }
 
@@ -500,8 +501,9 @@
         // Service Worker registration with auto-refresh on hard reload
         if ('serviceWorker' in navigator) {
             // Detect hard reload (Ctrl+Shift+R or Cmd+Shift+R)
-            const isHardReload = performance.navigation.type === 1 && 
-                (performance.navigation.redirectCount === 0);
+            // FIX: Replace deprecated performance.navigation with PerformanceNavigationTiming API
+            const navEntry = performance.getEntriesByType('navigation')[0];
+            const isHardReload = navEntry && navEntry.type === 'reload';
             
             navigator.serviceWorker.register('sw.js').then((registration) => {
                 // Handle updates

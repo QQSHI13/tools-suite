@@ -281,7 +281,13 @@
             }
             // Replace URL-safe characters
             str = str.replace(/-/g, '+').replace(/_/g, '/');
-            return atob(str);
+            
+            // CRITICAL FIX: Add error handling for invalid base64
+            try {
+                return atob(str);
+            } catch (e) {
+                throw new Error('Invalid base64 encoding in token');
+            }
         }
 
         function renderJWT(header, payload, signature) {
