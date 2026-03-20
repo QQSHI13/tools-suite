@@ -1564,33 +1564,3 @@
     </script>
 </body>
 </html>
-ntListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            // New version available, skip waiting
-                            newWorker.postMessage({ type: 'SKIP_WAITING' });
-                        }
-                    });
-                });
-
-                // If hard reload, tell SW to fetch fresh
-                if (isHardReload && registration.active) {
-                    registration.active.postMessage({ type: 'HARD_RELOAD' });
-                }
-            });
-
-            // Auto-refresh when controller changes (after skipWaiting)
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
-            });
-        }
-    </script>
-</body>
-</html>
-nges (after skipWaiting)
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
-            });
-        }
-    </script>
-</body>
-</html>
