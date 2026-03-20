@@ -366,10 +366,10 @@
             updateStats();
         }
         
-        function renderGrid() {
+        function buildGrid() {
             gridEl.innerHTML = '';
             gridEl.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-            
+
             for (let y = 0; y < gridSize; y++) {
                 for (let x = 0; x < gridSize; x++) {
                     const cell = document.createElement('div');
@@ -377,19 +377,37 @@
                     if (grid[y][x]) cell.classList.add('alive');
                     cell.dataset.x = x;
                     cell.dataset.y = y;
-                    
+
                     cell.addEventListener('mousedown', (e) => {
                         e.preventDefault();
                         isDrawing = true;
                         drawMode = !grid[y][x];
                         toggleCell(x, y);
                     });
-                    
+
                     cell.addEventListener('mouseenter', () => {
                         if (isDrawing) toggleCell(x, y, drawMode);
                     });
-                    
+
                     gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function renderGrid() {
+            // Incremental update: only rebuild DOM when cell count changed
+            if (gridEl.children.length !== gridSize * gridSize) {
+                buildGrid();
+                return;
+            }
+            for (let y = 0; y < gridSize; y++) {
+                for (let x = 0; x < gridSize; x++) {
+                    const cell = gridEl.children[y * gridSize + x];
+                    if (grid[y][x]) {
+                        cell.classList.add('alive');
+                    } else {
+                        cell.classList.remove('alive');
+                    }
                 }
             }
         }
@@ -469,6 +487,7 @@
         
         function updateOutput() {
             const cells = getAliveCells();
+            const cellSet = new Set(cells.map(c => `${c.x},${c.y}`));
             let output = '';
             
             switch (currentFormat) {
@@ -517,7 +536,7 @@
                             let run = 0;
                             let lastState = false;
                             for (let x = minX; x <= maxX; x++) {
-                                const isAlive = cells.some(c => c.x === x && c.y === y);
+                                const isAlive = cellSet.has(`${x},${y}`);
                                 if (x === minX) {
                                     lastState = isAlive;
                                     run = 1;
@@ -551,7 +570,7 @@
                         output = '! Game of Life Pattern\n';
                         for (let y = minY; y <= maxY; y++) {
                             for (let x = minX; x <= maxX; x++) {
-                                output += cells.some(c => c.x === x && c.y === y) ? 'O' : '.';
+                                output += cellSet.has(`${x},${y}`) ? 'O' : '.';
                             }
                             output += '\n';
                         }
@@ -703,9 +722,38 @@
         document.addEventListener('mouseup', () => {
             isDrawing = false;
         });
-        
+
+        gridEl.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const el = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (el && el.classList.contains('cell')) {
+                const x = parseInt(el.dataset.x);
+                const y = parseInt(el.dataset.y);
+                isDrawing = true;
+                drawMode = !grid[y][x];
+                toggleCell(x, y);
+            }
+        }, { passive: false });
+
+        gridEl.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const touch = e.touches[0];
+            const el = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (el && el.classList.contains('cell')) {
+                const x = parseInt(el.dataset.x);
+                const y = parseInt(el.dataset.y);
+                toggleCell(x, y, drawMode);
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            isDrawing = false;
+        });
+
         initGrid();
-        renderGrid();
+        buildGrid();
         updateOutput();
     </script>
 </body>
