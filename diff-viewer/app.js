@@ -87,6 +87,14 @@ function loadFromURL() {
     }
 }
 
+function uint8ArrayToBase64(bytes) {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
 function updateURL() {
     try {
         const original = originalInput.value;
@@ -95,8 +103,9 @@ function updateURL() {
             window.history.replaceState({}, '', window.location.pathname);
             return;
         }
-        const originalEncoded = btoa(String.fromCharCode(...new TextEncoder().encode(original)));
-        const modifiedEncoded = btoa(String.fromCharCode(...new TextEncoder().encode(modified)));
+        const enc = new TextEncoder();
+        const originalEncoded = uint8ArrayToBase64(enc.encode(original));
+        const modifiedEncoded = uint8ArrayToBase64(enc.encode(modified));
         const params = new URLSearchParams();
         if (original) params.set('original', originalEncoded);
         if (modified) params.set('modified', modifiedEncoded);
