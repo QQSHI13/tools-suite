@@ -345,7 +345,10 @@
         }
 
         function syntaxHighlight(obj) {
-            const json = JSON.stringify(obj, null, 2);
+            const json = JSON.stringify(obj, null, 2)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
             return json.replace(/(".*?"):/g, '<span class="json-key">$1</span>:')
                        .replace(/: (".*?")/g, ': <span class="json-string">$1</span>')
                        .replace(/: (\d+)/g, ': <span class="json-number">$1</span>')
