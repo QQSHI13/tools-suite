@@ -438,6 +438,7 @@
 
     <div class="copy-toast" id="copyToast">Copied to clipboard!</div>
 
+    <script src="../shared/utils.js"></script>
     <script>
         const captureZone = document.getElementById('captureZone');
         const zoneIcon = document.getElementById('zoneIcon');
@@ -485,20 +486,21 @@
         function renderKeyCombo(e) {
             const modifiers = getModifierKeys(e);
             const isModifier = modifierKeys.includes(e.key);
-            
+
             let html = '';
-            
+
             modifiers.forEach((mod, i) => {
-                html += `<span class="key modifier">${mod}</span>`;
+                html += `<span class="key modifier">${Utils.escapeHtml(mod)}</span>`;
                 if (i < modifiers.length - 1 || !isModifier) {
                     html += `<span class="plus">+</span>`;
                 }
             });
-            
+
             if (!isModifier) {
-                html += `<span class="key main">${e.key === ' ' ? 'Space' : e.key}</span>`;
+                const keyDisplay = e.key === ' ' ? 'Space' : Utils.escapeHtml(e.key);
+                html += `<span class="key main">${keyDisplay}</span>`;
             }
-            
+
             return html;
         }
 
@@ -516,12 +518,15 @@
                 { label: 'metaKey', value: e.metaKey, type: 'boolean' }
             ];
 
-            return fields.map(field => `
+            return fields.map(field => {
+                const value = field.type === 'code' ? Utils.escapeHtml(String(field.value)) : field.value;
+                return `
                 <div class="event-field">
                     <span class="field-label">${field.label}</span>
-                    <span class="field-value ${field.type}">${field.value}</span>
+                    <span class="field-value ${field.type}">${value}</span>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function addToHistory(e) {
@@ -546,7 +551,7 @@
 
         function renderMiniKey(text) {
             if (text === ' ') return '<span class="mini-key">Space</span>';
-            return `<span class="mini-key">${text}</span>`;
+            return `<span class="mini-key">${Utils.escapeHtml(text)}</span>`;
         }
 
         function renderHistory() {
@@ -582,7 +587,7 @@
 
         function displayEvent(e) {
             lastEventData = e;
-            
+
             captureZone.classList.add('captured');
             zoneIcon.textContent = '✓';
             zoneText.textContent = `${e.type}: ${getKeyComboString(e)}`;

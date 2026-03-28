@@ -409,7 +409,7 @@
 
         function renderHistory() {
             historyGrid.innerHTML = colorHistory.map(color => `
-                <div class="history-item" style="background-color: ${color}" onclick="updateColor('${color}')"></div>
+                <div class="history-item" style="background-color: ${Utils.escapeHtml(color)}" onclick="updateColor('${Utils.escapeHtml(color)}')"></div>
             `).join('');
         }
 
@@ -463,7 +463,7 @@
             }
 
             harmonyPalette.innerHTML = colors.map(color => `
-                <div class="palette-item" style="background-color: ${color}" onclick="updateColor('${color}')">${color}</div>
+                <div class="palette-item" style="background-color: ${Utils.escapeHtml(color)}" onclick="updateColor('${Utils.escapeHtml(color)}')">${Utils.escapeHtml(color)}</div>
             `).join('');
         }
 
@@ -488,7 +488,7 @@
 
         function renderPresetPalettes() {
             presetPalettes.innerHTML = presetColors.map(color => `
-                <div class="palette-item" style="background-color: ${color}" onclick="updateColor('${color}')">${color}</div>
+                <div class="palette-item" style="background-color: ${Utils.escapeHtml(color)}" onclick="updateColor('${Utils.escapeHtml(color)}')">${Utils.escapeHtml(color)}</div>
             `).join('');
         }
 
