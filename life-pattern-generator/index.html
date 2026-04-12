@@ -756,5 +756,51 @@
         buildGrid();
         updateOutput();
     </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js', { scope: './' }).then((registration) => {
+                console.log('SW registered:', registration.scope);
+            }).catch((error) => {
+                console.error('SW registration failed:', error);
+            });
+        }
+    </script>
+    <script>
+        // Service Worker registration with auto-refresh on hard reload
+        if ('serviceWorker' in navigator) {
+            // Detect hard reload (Ctrl+Shift+R or Cmd+Shift+R)
+            let isHardReload = false;
+            if (performance.getEntriesByType && performance.getEntriesByType('navigation').length > 0) {
+                const navEntry = performance.getEntriesByType('navigation')[0];
+                isHardReload = navEntry.type === 'reload';
+            } else if (performance.navigation) {
+                // Fallback for older browsers
+                isHardReload = performance.navigation.type === 1;
+            }
+            
+            navigator.serviceWorker.register('./sw.js', { scope: './' }).then((registration) => {
+                // Handle updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New version available, skip waiting
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                    });
+                });
+
+                // If hard reload, tell SW to fetch fresh
+                if (isHardReload && registration.active) {
+                    registration.active.postMessage({ type: 'HARD_RELOAD' });
+                }
+            });
+
+            // Auto-refresh when controller changes (after skipWaiting)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+            });
+        }
+    </script>
 </body>
 </html>
