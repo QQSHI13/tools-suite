@@ -1,7 +1,8 @@
 const CACHE_NAME = 'keycode-logger-v1';
 const urlsToCache = [
   './',
-  './index.html'
+  './index.html',
+  './manifest.json'
 ];
 
 // Hard reload detection

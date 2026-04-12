@@ -5,7 +5,8 @@ const urlsToCache = [
   './style.css',
   './diff.js',
   './app.js',
-  './favicon.svg'
+  './favicon.svg',
+  './manifest.json'
 ];
 
 // Hard reload detection

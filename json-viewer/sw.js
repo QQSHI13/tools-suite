@@ -1,7 +1,9 @@
 const CACHE_NAME = 'json-viewer-v2';
 const urlsToCache = [
   './',
-  './index.html'
+  './index.html',
+  './favicon.ico',
+  './manifest.json'
 ];
 
 // Hard reload detection - check if this is a forced refresh

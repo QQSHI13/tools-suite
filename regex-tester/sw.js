@@ -1,7 +1,8 @@
 const CACHE_NAME = 'regex-tester-v2';
 const urlsToCache = [
   './',
-  './index.html'
+  './index.html',
+  './manifest.json'
 ];
 
 // Hard reload detection

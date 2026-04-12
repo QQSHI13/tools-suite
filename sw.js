@@ -1,7 +1,34 @@
 const CACHE_NAME = 'tools-suite-v1';
 const urlsToCache = [
   './',
-  './index.html'
+  './index.html',
+  './manifest.json',
+  './api-tester/index.html',
+  './api-tester/favicon.svg',
+  './api-tester/manifest.json',
+  './color-picker-plus/index.html',
+  './color-picker-plus/manifest.json',
+  './csv-json/index.html',
+  './csv-json/favicon.svg',
+  './csv-json/manifest.json',
+  './diff-viewer/index.html',
+  './diff-viewer/style.css',
+  './diff-viewer/diff.js',
+  './diff-viewer/app.js',
+  './diff-viewer/favicon.svg',
+  './diff-viewer/manifest.json',
+  './json-viewer/index.html',
+  './json-viewer/favicon.ico',
+  './json-viewer/manifest.json',
+  './jwt-decoder/index.html',
+  './jwt-decoder/favicon.ico',
+  './jwt-decoder/manifest.json',
+  './keycode-logger/index.html',
+  './keycode-logger/manifest.json',
+  './life-pattern-generator/index.html',
+  './life-pattern-generator/manifest.json',
+  './regex-tester/index.html',
+  './regex-tester/manifest.json'
 ];
 
 // Hard reload detection

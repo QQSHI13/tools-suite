@@ -1,7 +1,9 @@
 const CACHE_NAME = 'jwt-decoder-v2';
 const urlsToCache = [
   './',
-  './index.html'
+  './index.html',
+  './favicon.ico',
+  './manifest.json'
 ];
 
 // Hard reload detection
