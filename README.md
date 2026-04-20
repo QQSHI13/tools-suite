@@ -6,17 +6,18 @@ A curated collection of essential web-based developer tools, all in one place. N
 
 ---
 
-## ✨ Features
+## 🛠️ Tools
 
 | Tool | Description |
 |------|-------------|
-| **🔧 API Tester** | Test HTTP requests with all methods (GET, POST, PUT, DELETE, PATCH), custom headers, query params, and view formatted responses with syntax highlighting |
-| **📊 JSON Viewer** | Visualize, validate, and format JSON with collapsible tree view, search functionality, and error detection |
-| **🔍 Regex Tester** | Test regular expressions with live matching, capture groups visualization, and a pattern library for common use cases |
-| **🔐 JWT Decoder** | Decode and inspect JWT tokens with header/payload breakdown, signature verification, and expiry detection |
-| **📑 CSV to JSON** | Convert CSV files to JSON with smart parsing, delimiter detection, and preview functionality |
-| **📝 Diff Viewer** | Compare text side-by-side or inline with change highlighting, line numbers, and character-level diffs |
-| **⌨️ Keycode Logger** | Log and display keyboard keycodes, event properties, and modifier states in real-time |
+| **🔧 API Tester** | Test HTTP requests with all methods, custom headers, view formatted responses |
+| **📊 JSON Viewer** | Visualize, validate, and format JSON with collapsible tree view |
+| **🔍 Regex Tester** | Test regular expressions with live matching and capture groups |
+| **🔐 JWT Decoder** | Decode JWT tokens with header/payload breakdown and expiry detection |
+| **📑 CSV to JSON** | Convert CSV to JSON with smart parsing and preview |
+| **📝 Diff Viewer** | Compare text side-by-side with change highlighting |
+| **⌨️ Keycode Logger** | Log keyboard keycodes and event properties in real-time |
+| **🎨 Life Pattern Generator** | Generate Conway's Game of Life patterns and watch them evolve |
 
 ---
 
