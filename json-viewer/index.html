@@ -140,7 +140,7 @@
             margin-right: 4px;
         }
         .toggle-btn:hover { color: var(--text); }
-        .collapsed::after { content: '…'; color: var(--text-secondary); }
+        .collapsed::after { content: '...'; color: var(--text-secondary); }
         .error-bar {
             background: var(--error);
             color: white;
@@ -231,7 +231,7 @@
         function parseJSON() {
             nodeIdCounter = 0; // Reset counter for each render
             const text = input.value.trim();
-            
+
             // Check input size limit
             const byteSize = new Blob([text]).size;
             if (byteSize > MAX_INPUT_SIZE) {
@@ -239,7 +239,7 @@
                 tree.innerHTML = '<span style="color: var(--text-secondary)">Input too large</span>';
                 return;
             }
-            
+
             if (!text) {
                 tree.innerHTML = '';
                 hideError();
@@ -269,9 +269,9 @@
             if (Array.isArray(data)) {
                 if (data.length === 0) return `[]${isLast ? '' : ','}`;
                 const currentPath = path || `n${nodeIdCounter++}`;
-                const safePath = escapePath(currentPath);
-                let html = `<span class="toggle-btn" onclick="toggleNode('${safePath}')">▼</span>[<span class="json-number">${data.length}</span>]\n`;
-                html += `<div class="json-node" id="node-${safePath}">`;
+                const domId = `n${nodeIdCounter++}`;
+                let html = `<span class="toggle-btn" onclick="toggleNode('${domId}')">▼</span>[<span class="json-number">${data.length}</span>]\n`;
+                html += `<div class="json-node" id="node-${domId}">`;
                 data.forEach((item, i) => {
                     html += renderTree(item, null, i === data.length - 1, `${currentPath}[${i}]`);
                     if (i < data.length - 1) html += '\n';
@@ -283,9 +283,9 @@
             const keys = Object.keys(data);
             if (keys.length === 0) return `{}` + (isLast ? '' : ',');
             const currentPath = path || `n${nodeIdCounter++}`;
-            const safePath = escapePath(currentPath);
-            let html = `<span class="toggle-btn" onclick="toggleNode('${safePath}')">▼</span>{<span class="json-number">${keys.length}</span>}\n`;
-            html += `<div class="json-node" id="node-${safePath}">`;
+            const domId = `n${nodeIdCounter++}`;
+            let html = `<span class="toggle-btn" onclick="toggleNode('${domId}')">▼</span>{<span class="json-number">${keys.length}</span>}\n`;
+            html += `<div class="json-node" id="node-${domId}">`;
             keys.forEach((k, i) => {
                 html += `<span class="json-key">"${Utils.escapeHtml(k)}"</span>: ${renderTree(data[k], k, i === keys.length - 1, `${currentPath}.${k}`)}`;
                 if (i < keys.length - 1) html += '\n';
@@ -294,8 +294,8 @@
             return html + (isLast ? '' : ',');
         }
 
-        function toggleNode(path) {
-            const node = document.getElementById(`node-${path}`);
+        function toggleNode(domId) {
+            const node = document.getElementById(`node-${domId}`);
             const btn = node.previousElementSibling;
             if (node.style.display === 'none') {
                 node.style.display = 'block';
@@ -345,21 +345,11 @@
         }
 
         async function copyJSON() {
-            try {
-                await navigator.clipboard.writeText(input.value);
-                const btn = document.querySelector('button.primary');
-                const original = btn.textContent;
-                btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = original, 1500);
-            } catch (err) {
-                // Fallback for browsers without clipboard API support
-                input.select();
-                document.execCommand('copy');
-                const btn = document.querySelector('button.primary');
-                const original = btn.textContent;
-                btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = original, 1500);
-            }
+            const success = await Utils.copyToClipboard(input.value);
+            const btn = document.querySelector('button.primary');
+            const original = btn.textContent;
+            btn.textContent = success ? 'Copied!' : 'Copy failed!';
+            setTimeout(() => btn.textContent = original, 1500);
         }
 
         function clearJSON() {
@@ -406,11 +396,11 @@
                 
                 // Count this object/array as a level
                 const currentDepth = depth + 1;
-                maxDepth = Math.max(maxDepth, currentDepth - 1);
-                
+                maxDepth = Math.max(maxDepth, currentDepth);
+
                 if (Array.isArray(current)) {
                     if (current.length === 0) {
-                        maxDepth = Math.max(maxDepth, depth);
+                        maxDepth = Math.max(maxDepth, currentDepth);
                     } else {
                         for (let i = 0; i < current.length; i++) {
                             stack.push({ data: current[i], depth: currentDepth });
@@ -419,7 +409,7 @@
                 } else {
                     const values = Object.values(current);
                     if (values.length === 0) {
-                        maxDepth = Math.max(maxDepth, depth);
+                        maxDepth = Math.max(maxDepth, currentDepth);
                     } else {
                         for (let i = 0; i < values.length; i++) {
                             stack.push({ data: values[i], depth: currentDepth });
@@ -474,7 +464,7 @@
                 // Fallback for older browsers
                 isHardReload = performance.navigation.type === 1;
             }
-            
+
             navigator.serviceWorker.register('./sw.js', { scope: './' }).then((registration) => {
                 // Handle updates
                 registration.addEventListener('updatefound', () => {

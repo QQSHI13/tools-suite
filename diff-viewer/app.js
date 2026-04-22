@@ -119,15 +119,13 @@ function splitLines(text) {
     if (!text) return [];
     if (text === '') return [];
     
-    // Split by newline but preserve trailing newlines info
+    // Split by newline but preserve trailing empty lines info
     // Use regex to handle all types of line endings
     const lines = text.split(/\r?\n/);
     
-    // Only remove trailing empty line if the text ends with a newline
-    // but preserve intentionally blank lines in the middle
-    if (lines.length > 0 && lines[lines.length - 1] === '' && text.endsWith('\n')) {
-        lines.pop();
-    }
+    // Preserve trailing empty line - don't pop it
+    // A file ending with a newline should have an empty last line
+    // This is meaningful for diff accuracy
     return lines;
 }
 
@@ -142,9 +140,6 @@ function computeDiff() {
 
     const original = originalInput.value;
     const modified = modifiedInput.value;
-
-    // Update URL for sharing
-    updateURL();
 
     if (!original && !modified) {
         showPlaceholder();
@@ -190,6 +185,9 @@ function computeDiff() {
         virtualStartIndex = 0;
         renderDiff(diffs);
         updateStats(diffs);
+        
+        // Update URL after diff computation completes to avoid race conditions
+        updateURL();
     } catch (error) {
         console.error('Diff computation error:', error);
         showError('Error computing diff: ' + error.message);
