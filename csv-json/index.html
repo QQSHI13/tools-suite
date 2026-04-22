@@ -432,7 +432,7 @@
                         let value = row[i] || '';
                         if (trimValues) value = value.trim();
                         
-                        if (parseNumbers && /^-?\d+\.?\d*$/.test(value)) {
+                        if (parseNumbers && /^-?\d+(\.\d+)?$/.test(value)) {
                             value = parseFloat(value);
                         } else if (parseBooleans && /^(true|false)$/i.test(value)) {
                             value = value.toLowerCase() === 'true';

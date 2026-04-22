@@ -305,6 +305,13 @@
             logEl.scrollTop = logEl.scrollHeight;
         }
 
+        function resetButtons() {
+            connectBtn.textContent = 'Connect';
+            connectBtn.disabled = false;
+            syncBtn.disabled = true;
+            getBtn.disabled = true;
+        }
+
         // Slider value display updates
         document.getElementById('ledBrightness').addEventListener('input', function() {
             document.getElementById('ledValue').textContent = this.value;

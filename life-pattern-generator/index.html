@@ -757,15 +757,6 @@
         updateOutput();
     </script>
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js', { scope: './' }).then((registration) => {
-                console.log('SW registered:', registration.scope);
-            }).catch((error) => {
-                console.error('SW registration failed:', error);
-            });
-        }
-    </script>
-    <script>
         // Service Worker registration with auto-refresh on hard reload
         if ('serviceWorker' in navigator) {
             // Detect hard reload (Ctrl+Shift+R or Cmd+Shift+R)
