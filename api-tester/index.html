@@ -1398,8 +1398,11 @@
             const base64 = safeBtoa(json);
             const shareUrl = `${window.location.origin}${window.location.pathname}?share=${base64}`;
             
-            navigator.clipboard.writeText(shareUrl);
-            showToast('Share URL copied to clipboard!');
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast('Share URL copied to clipboard!');
+            }).catch(err => {
+                showToast('Failed to copy: ' + err.message);
+            });
         }
         
         function exportCollection() {

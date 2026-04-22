@@ -421,11 +421,18 @@ URL: https://github.com/QQSHI13</textarea>
 
         async function copyRegex() {
             const text = `/${regexInput.value}/${flagsInput.value}`;
-            navigator.clipboard.writeText(text);
-            const btn = document.querySelector('button[onclick="copyRegex()"]');
-            const original = btn.textContent;
-            btn.textContent = 'Copied!';
-            setTimeout(() => btn.textContent = original, 1500);
+            try {
+                await navigator.clipboard.writeText(text);
+                const btn = document.querySelector('button[onclick="copyRegex()"]');
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = original, 1500);
+            } catch (err) {
+                const btn = document.querySelector('button[onclick="copyRegex()"]');
+                const original = btn.textContent;
+                btn.textContent = 'Copy failed';
+                setTimeout(() => btn.textContent = original, 1500);
+            }
         }
 
         function clearAll() {
