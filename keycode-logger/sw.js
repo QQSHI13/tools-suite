@@ -7,7 +7,8 @@ const CACHE_NAME = 'keycode-logger-v2';
 const urlsToCache = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  '../shared/utils.js'
 ];
 
 self.addEventListener('install', (event) => {

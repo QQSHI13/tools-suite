@@ -535,6 +535,19 @@
         syncBtn.addEventListener('click', sendSync);
         getBtn.addEventListener('click', sendGet);
         
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (reader) {
+                reader.cancel().catch(() => {});
+            }
+            if (writer) {
+                writer.close().catch(() => {});
+            }
+            if (port) {
+                port.close().catch(() => {});
+            }
+        });
+        
         // Check for Web Serial API support
         if (!('serial' in navigator)) {
             statusEl.textContent = 'Web Serial not supported. Use Chrome/Edge on desktop.';

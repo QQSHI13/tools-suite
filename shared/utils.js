@@ -8,14 +8,18 @@
 
     /**
      * Comprehensive HTML escaping to prevent XSS attacks
+     * Escapes & < > " ' to prevent both content injection and attribute injection
      * @param {string} text - Text to escape
      * @returns {string} Escaped HTML string
      */
     function escapeHtml(text) {
         if (text == null) return '';
-        const div = document.createElement('div');
-        div.textContent = String(text);
-        return div.innerHTML;
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     /**

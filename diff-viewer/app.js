@@ -24,7 +24,6 @@ let virtualStartIndex = 0;
 
 // Options
 let options = {
-    wordLevel: false,
     ignoreWhitespace: false
 };
 
@@ -47,17 +46,14 @@ function setupEventListeners() {
     document.getElementById('btn-export').addEventListener('click', exportAsPatch);
 
     // Options
-    const wordLevelToggle = document.getElementById('opt-word-level');
     const ignoreWhitespaceToggle = document.getElementById('opt-ignore-whitespace');
     
-    if (wordLevelToggle) {
-        wordLevelToggle.addEventListener('change', (e) => {
-            options.wordLevel = e.target.checked;
+    if (ignoreWhitespaceToggle) {
+        ignoreWhitespaceToggle.addEventListener('change', (e) => {
+            options.ignoreWhitespace = e.target.checked;
             computeDiff();
         });
     }
-    if (ignoreWhitespaceToggle) {
-        ignoreWhitespaceToggle.addEventListener('change', (e) => {
             options.ignoreWhitespace = e.target.checked;
             computeDiff();
         });

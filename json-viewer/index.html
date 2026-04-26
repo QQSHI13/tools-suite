@@ -371,10 +371,6 @@
 
 
 
-        function escapePath(id) {
-            return id.replace(/[^a-zA-Z0-9-_]/g, '_');
-        }
-
         function countNodes(data) {
             if (data === null || typeof data !== 'object') return 1;
             if (Array.isArray(data)) return data.reduce((sum, item) => sum + countNodes(item), 1);

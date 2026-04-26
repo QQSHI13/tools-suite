@@ -6,7 +6,8 @@
 const CACHE_NAME = 'color-picker-plus-v2';
 const urlsToCache = [
   './',
-  './index.html'
+  './index.html',
+  '../shared/utils.js'
 ];
 
 self.addEventListener('install', (event) => {

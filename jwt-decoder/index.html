@@ -349,10 +349,70 @@
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;');
-            return json.replace(/(".*?"):/g, '<span class="json-key">$1</span>:')
-                       .replace(/: (".*?")/g, ': <span class="json-string">$1</span>')
-                       .replace(/: (\d+)/g, ': <span class="json-number">$1</span>')
-                       .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>');
+            // Token-based highlighting to avoid regex issues with quotes/colons
+            let result = '';
+            let inString = false;
+            let stringContent = '';
+            let isKey = true;
+            
+            for (let i = 0; i < json.length; i++) {
+                const char = json[i];
+                
+                if (char === '"') {
+                    // Check for escaped quote
+                    let backslashCount = 0;
+                    let j = i - 1;
+                    while (j >= 0 && json[j] === '\\') {
+                        backslashCount++;
+                        j--;
+                    }
+                    if (backslashCount % 2 === 0) {
+                        // Not escaped - toggle string state
+                        if (!inString) {
+                            inString = true;
+                            stringContent = '';
+                        } else {
+                            inString = false;
+                            const spanClass = isKey ? 'json-key' : 'json-string';
+                            result += `<span class="${spanClass}">"${Utils.escapeHtml(stringContent)}"</span>`;
+                            isKey = false;
+                        }
+                    } else {
+                        stringContent += char;
+                    }
+                } else if (inString) {
+                    stringContent += char;
+                } else if (char === ':' && !inString) {
+                    result += char;
+                    isKey = false;
+                } else if (char === ',' || char === '{' || char === '[') {
+                    result += char;
+                    isKey = true;
+                } else if (/[}\]]/.test(char)) {
+                    result += char;
+                    isKey = false;
+                } else if (!inString && /\d/.test(char)) {
+                    const numMatch = json.substring(i).match(/^(\d+)/);
+                    if (numMatch) {
+                        result += `<span class="json-number">${numMatch[1]}</span>`;
+                        i += numMatch[1].length - 1;
+                    } else {
+                        result += char;
+                    }
+                } else if (!inString && json.substring(i, i + 4) === 'true') {
+                    result += `<span class="json-boolean">true</span>`;
+                    i += 3;
+                } else if (!inString && json.substring(i, i + 5) === 'false') {
+                    result += `<span class="json-boolean">false</span>`;
+                    i += 4;
+                } else if (!inString && json.substring(i, i + 4) === 'null') {
+                    result += `<span class="json-null">null</span>`;
+                    i += 3;
+                } else {
+                    result += char;
+                }
+            }
+            return result;
         }
 
         function loadSample(type) {
@@ -409,11 +469,39 @@
         decodeJWT();
     </script>
     <script>
+        // Service Worker registration with auto-refresh on hard reload
         if ('serviceWorker' in navigator) {
+            // Detect hard reload (Ctrl+Shift+R or Cmd+Shift+R)
+            let isHardReload = false;
+            if (performance.getEntriesByType && performance.getEntriesByType('navigation').length > 0) {
+                const navEntry = performance.getEntriesByType('navigation')[0];
+                isHardReload = navEntry.type === 'reload';
+            } else if (performance.navigation) {
+                // Fallback for older browsers
+                isHardReload = performance.navigation.type === 1;
+            }
+            
             navigator.serviceWorker.register('./sw.js', { scope: './' }).then((registration) => {
-                console.log('SW registered:', registration.scope);
-            }).catch((error) => {
-                console.error('SW registration failed:', error);
+                // Handle updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New version available, skip waiting
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        }
+                    });
+                });
+
+                // If hard reload, tell SW to fetch fresh
+                if (isHardReload && registration.active) {
+                    registration.active.postMessage({ type: 'HARD_RELOAD' });
+                }
+            });
+
+            // Auto-refresh when controller changes (after skipWaiting)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
             });
         }
     </script>

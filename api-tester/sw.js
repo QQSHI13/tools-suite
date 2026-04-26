@@ -3,12 +3,13 @@
  * Network-first for HTML, cache-first for assets
  */
 
-const CACHE_NAME = 'api-tester-v4';
+const CACHE_NAME = 'api-tester-v5';
 const urlsToCache = [
   './',
   './index.html',
   './favicon.svg',
-  './manifest.json'
+  './manifest.json',
+  '../shared/utils.js'
 ];
 
 self.addEventListener('install', (event) => {

@@ -619,9 +619,8 @@
             }, 2000);
         }
 
-        // Event listeners
+        // Event listeners - only capture keydown for history to avoid duplicates
         document.addEventListener('keydown', handleKeyEvent);
-        document.addEventListener('keyup', handleKeyEvent);
 
         // Capture zone click to focus
         captureZone.addEventListener('click', () => {

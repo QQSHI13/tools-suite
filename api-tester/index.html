@@ -1438,12 +1438,8 @@
                 showToast('No response to copy');
                 return;
             }
-            try {
-                await navigator.clipboard.writeText(currentResponseText);
-                showToast('Response copied to clipboard!');
-            } catch (err) {
-                showToast('Failed to copy: ' + err.message);
-            }
+            const success = await Utils.copyToClipboard(currentResponseText);
+            showToast(success ? 'Response copied to clipboard!' : 'Failed to copy: clipboard denied or unavailable');
         }
         
         function toggleTheme() {

@@ -3,11 +3,12 @@
  * Network-first for HTML, cache-first for assets
  */
 
-const CACHE_NAME = 'tools-suite-v2';
+const CACHE_NAME = 'tools-suite-v3';
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
+  './shared/utils.js',
   './api-tester/index.html',
   './api-tester/manifest.json',
   './color-picker-plus/index.html',

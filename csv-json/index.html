@@ -532,15 +532,23 @@
             fileInput.value = '';
         }
 
-        function copyJSON() {
-            if (currentData.length === 0) return;
-            const minify = document.getElementById('minify').checked;
-            navigator.clipboard.writeText(JSON.stringify(currentData, null, minify ? 0 : 2));
+        async function copyJSON() {
+            if (currentData.length === 0) {
+                showError('Nothing to copy. Convert some CSV data first.');
+                return;
+            }
+            const minify = document.getElementById('minify')?.checked ?? false;
+            const jsonText = JSON.stringify(currentData, null, minify ? 0 : 2);
+            const success = await Utils.copyToClipboard(jsonText);
             
             const btn = document.querySelector('button.primary');
             const original = btn.textContent;
-            btn.textContent = 'Copied!';
+            btn.textContent = success ? 'Copied!' : 'Copy failed!';
             setTimeout(() => btn.textContent = original, 1500);
+            
+            if (!success) {
+                showError('Failed to copy to clipboard. Check permissions.');
+            }
         }
 
         function downloadJSON() {
