@@ -102,9 +102,14 @@
         // Service Worker registration with auto-refresh on hard reload
         if ('serviceWorker' in navigator) {
             // Detect hard reload (Ctrl+Shift+R or Cmd+Shift+R)
-            const navEntry = performance.getEntriesByType('navigation')[0];
-            const isHardReload = navEntry && navEntry.type === 'reload' && 
-                (navEntry.redirectCount === 0);
+            let isHardReload = false;
+            if (performance.getEntriesByType && performance.getEntriesByType('navigation').length > 0) {
+                const navEntry = performance.getEntriesByType('navigation')[0];
+                isHardReload = navEntry.type === 'reload';
+            } else if (performance.navigation) {
+                // Fallback for older browsers
+                isHardReload = performance.navigation.type === 1;
+            }
             
             navigator.serviceWorker.register('./sw.js', { scope: './' }).then((registration) => {
                 // Handle updates

@@ -312,6 +312,7 @@
             const MAX_SIZE = 10 * 1024 * 1024;
             if (file.size > MAX_SIZE) {
                 showError('File too large. Maximum size is 10MB.');
+                fileInput.value = '';
                 return;
             }
             
@@ -320,9 +321,11 @@
                 csvInput.value = e.target.result;
                 showTextarea();
                 convert();
+                fileInput.value = ''; // Reset so same file can be re-selected
             };
             reader.onerror = () => {
                 showError('Failed to read file. Please try again.');
+                fileInput.value = '';
             };
             reader.readAsText(file);
         }
@@ -417,11 +420,11 @@
                 const { headers, data } = parseCSV(text);
                 currentHeaders = headers;
                 
-                const firstRowHeaders = document.getElementById('firstRowHeaders').checked;
-                const trimValues = document.getElementById('trimValues').checked;
-                const parseNumbers = document.getElementById('parseNumbers').checked;
-                const parseBooleans = document.getElementById('parseBooleans').checked;
-                const minify = document.getElementById('minify').checked;
+                const firstRowHeaders = document.getElementById('firstRowHeaders')?.checked ?? true;
+                const trimValues = document.getElementById('trimValues')?.checked ?? true;
+                const parseNumbers = document.getElementById('parseNumbers')?.checked ?? false;
+                const parseBooleans = document.getElementById('parseBooleans')?.checked ?? false;
+                const minify = document.getElementById('minify')?.checked ?? false;
 
                 let actualHeaders = firstRowHeaders ? headers : headers.map((_, i) => `Column${i + 1}`);
                 let actualData = firstRowHeaders ? data : [headers, ...data];
@@ -585,9 +588,14 @@
         // Service Worker registration with auto-refresh on hard reload
         if ('serviceWorker' in navigator) {
             // Detect hard reload (Ctrl+Shift+R or Cmd+Shift+R)
-            const navEntry = performance.getEntriesByType('navigation')[0];
-            const isHardReload = navEntry && navEntry.type === 'reload' && 
-                (navEntry.redirectCount === 0);
+            let isHardReload = false;
+            if (performance.getEntriesByType && performance.getEntriesByType('navigation').length > 0) {
+                const navEntry = performance.getEntriesByType('navigation')[0];
+                isHardReload = navEntry.type === 'reload';
+            } else if (performance.navigation) {
+                // Fallback for older browsers
+                isHardReload = performance.navigation.type === 1;
+            }
             
             navigator.serviceWorker.register('./sw.js', { scope: './' }).then((registration) => {
                 // Handle updates
