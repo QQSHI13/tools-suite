@@ -251,19 +251,19 @@
                     <div class="input-group">
                         <label>HEX:</label>
                         <input type="text" id="hexInput" value="#667EEA">
-                        <button class="copy-btn" onclick="copyColor('hex', event)">Copy</button>
+                        <button class="copy-btn" onclick="copyColor('hex', this)">Copy</button>
                     </div>
                     
                     <div class="input-group">
                         <label>RGB:</label>
                         <input type="text" id="rgbInput" value="rgb(102, 126, 234)">
-                        <button class="copy-btn" onclick="copyColor('rgb', event)">Copy</button>
+                        <button class="copy-btn" onclick="copyColor('rgb', this)">Copy</button>
                     </div>
                     
                     <div class="input-group">
                         <label>HSL:</label>
                         <input type="text" id="hslInput" value="hsl(229, 74%, 66%)">
-                        <button class="copy-btn" onclick="copyColor('hsl', event)">Copy</button>
+                        <button class="copy-btn" onclick="copyColor('hsl', this)">Copy</button>
                     </div>
                     
                     <div class="input-group">
@@ -472,7 +472,7 @@
             return rgbToHex(rgb.r, rgb.g, rgb.b);
         }
 
-        async function copyColor(type, event) {
+        async function copyColor(type, btn) {
             let text = '';
             switch (type) {
                 case 'hex': text = hexInput.value; break;
@@ -480,7 +480,6 @@
                 case 'hsl': text = hslInput.value; break;
             }
             const success = await Utils.copyToClipboard(text);
-            const btn = event.target;
             const originalText = btn.textContent;
             btn.textContent = success ? 'Copied!' : 'Failed!';
             setTimeout(() => btn.textContent = originalText, 1000);

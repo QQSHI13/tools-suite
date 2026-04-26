@@ -81,6 +81,17 @@
             border-radius: 50%;
             opacity: 0;
             animation: float 15s infinite;
+            will-change: transform;
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            .particle {
+                animation: none;
+                opacity: 0;
+            }
+            .avatar {
+                animation: none;
+            }
         }
         
         @keyframes float {

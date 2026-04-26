@@ -665,11 +665,16 @@
             updateOutput();
         });
         
+        // Debounced speed change to prevent interval thrashing
+        let speedTimeout;
         speedInput.addEventListener('change', () => {
-            if (isPlaying) {
-                clearInterval(intervalId);
-                intervalId = setInterval(step, parseInt(speedInput.value));
-            }
+            clearTimeout(speedTimeout);
+            speedTimeout = setTimeout(() => {
+                if (isPlaying) {
+                    clearInterval(intervalId);
+                    intervalId = setInterval(step, parseInt(speedInput.value));
+                }
+            }, 200);
         });
         
         presetSelect.addEventListener('change', (e) => {

@@ -1469,14 +1469,85 @@
         
         // FIX: Syntax highlighting now works on escaped HTML
         function syntaxHighlight(json) {
-            // json is already escaped, so we need to handle the highlighting differently
-            // We replace escaped quotes with placeholders, apply highlighting, then restore
-            return json
-                .replace(/(&quot;(?:[^&]|&(?!quot;))*&quot;)(?=:)/g, '<span class="json-key">$1</span>')
-                .replace(/(&quot;(?:[^&]|&(?!quot;))*&quot;)/g, '<span class="json-string">$1</span>')
-                .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
-                .replace(/\b(null)\b/g, '<span class="json-null">$1</span>')
-                .replace(/\b(\d+)\b/g, '<span class="json-number">$1</span>');
+            // Token-based highlighting on already-escaped JSON
+            // Handles &quot; entities, nested structures, and values containing keywords
+            let result = '';
+            let inString = false;
+            let stringContent = '';
+            let isKey = true;
+            
+            // Helper to read next entity or char
+            const len = json.length;
+            for (let i = 0; i < len; i++) {
+                const slice = json.substring(i);
+                
+                if (slice.startsWith('&quot;')) {
+                    if (!inString) {
+                        inString = true;
+                        stringContent = '';
+                        i += 5; // skip &quot;
+                    } else {
+                        inString = false;
+                        const spanClass = isKey ? 'json-key' : 'json-string';
+                        result += `<span class="${spanClass}">&quot;${stringContent}&quot;</span>`;
+                        isKey = false;
+                        i += 5;
+                    }
+                    continue;
+                }
+                
+                if (inString) {
+                    // Copy everything inside string as-is
+                    const nextQuote = json.indexOf('&quot;', i);
+                    if (nextQuote === -1) {
+                        stringContent += json.substring(i);
+                        break;
+                    }
+                    stringContent += json.substring(i, nextQuote);
+                    i = nextQuote - 1;
+                    continue;
+                }
+                
+                if (slice[0] === ':') {
+                    result += ':';
+                    isKey = false;
+                    continue;
+                }
+                
+                if (slice[0] === ',' || slice[0] === '{' || slice[0] === '[') {
+                    result += slice[0];
+                    isKey = true;
+                    continue;
+                }
+                
+                if (/[}\]]/.test(slice[0])) {
+                    result += slice[0];
+                    isKey = false;
+                    continue;
+                }
+                
+                // Numbers (not inside strings since we handle that above)
+                const numMatch = slice.match(/^\d+/);
+                if (numMatch) {
+                    result += `<span class="json-number">${numMatch[0]}</span>`;
+                    i += numMatch[0].length - 1;
+                    continue;
+                }
+                
+                // Booleans and null (only match whole words)
+                const wordMatch = slice.match(/^(true|false|null)(?![a-zA-Z0-9_])/);
+                if (wordMatch) {
+                    const cls = wordMatch[1] === 'null' ? 'json-null' : 'json-boolean';
+                    result += `<span class="${cls}">${wordMatch[1]}</span>`;
+                    i += wordMatch[1].length - 1;
+                    continue;
+                }
+                
+                // Copy any other character/whitespace as-is
+                result += slice[0];
+            }
+            
+            return result;
         }
         
         // Load saved theme

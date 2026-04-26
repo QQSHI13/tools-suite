@@ -544,7 +544,17 @@ function generatePatch() {
     const date = new Date().toISOString();
     let patch = `--- original\t${date}\n`;
     patch += `+++ modified\t${date}\n`;
-    patch += `@@ -1,${(originalInput.value.match(/\n/g) || []).length + 1} +1,${(modifiedInput.value.match(/\n/g) || []).length + 1} @@\n`;
+    
+    // Compute actual line counts from diff data for each side
+    let originalLines = 0;
+    let modifiedLines = 0;
+    diffData.forEach(([type, text]) => {
+        const lines = text ? splitLines(text).length : 0;
+        if (type === 0 || type === -1) originalLines += lines;
+        if (type === 0 || type === 1) modifiedLines += lines;
+    });
+    
+    patch += `@@ -1,${originalLines || 1} +1,${modifiedLines || 1} @@\n`;
     
     patch += generatePlainTextDiff();
     return patch;
