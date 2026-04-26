@@ -3,7 +3,7 @@
  * Network-first for HTML, cache-first for assets
  */
 
-const CACHE_NAME = 'diff-viewer-v3';
+const CACHE_NAME = 'diff-viewer-v4';
 const urlsToCache = [
   './',
   './index.html',
@@ -11,7 +11,8 @@ const urlsToCache = [
   './diff.js',
   './app.js',
   './favicon.svg',
-  './manifest.json'
+  './manifest.json',
+  '../shared/utils.js'
 ];
 
 self.addEventListener('install', (event) => {

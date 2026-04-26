@@ -345,10 +345,7 @@
         }
 
         function syntaxHighlight(obj) {
-            const json = JSON.stringify(obj, null, 2)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+            const json = JSON.stringify(obj, null, 2);
             // Token-based highlighting to avoid regex issues with quotes/colons
             let result = '';
             let inString = false;

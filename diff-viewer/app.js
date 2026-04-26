@@ -54,10 +54,6 @@ function setupEventListeners() {
             computeDiff();
         });
     }
-            options.ignoreWhitespace = e.target.checked;
-            computeDiff();
-        });
-    }
 
     document.querySelectorAll('.btn-paste').forEach(btn => {
         btn.addEventListener('click', () => pasteFromClipboard(btn.dataset.target));
