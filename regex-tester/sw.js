@@ -3,11 +3,12 @@
  * Network-first for HTML, cache-first for assets
  */
 
-const CACHE_NAME = 'regex-tester-v3';
+const CACHE_NAME = 'regex-tester-v4';
 const urlsToCache = [
   './',
   './index.html',
   './manifest.json',
+  './regex-worker.js',
   '../shared/utils.js'
 ];
 

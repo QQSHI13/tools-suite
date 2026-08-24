@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.googletagmanager.com https://*.google-analytics.com; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; font-src 'self' data:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none';">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3PSNCFVT76"></script>
 <script>
@@ -324,29 +325,108 @@ URL: https://github.com/QQSHI13</textarea>
         testText.addEventListener('input', Utils.debounce(testRegex, 200));
         subInput.addEventListener('input', Utils.debounce(testRegex, 200));
 
+        // A pathological pattern can backtrack for effectively forever, and a
+        // running regex cannot be interrupted. So matching happens in a worker
+        // that we terminate if it exceeds this budget.
+        const REGEX_TIMEOUT_MS = 2000;
+        let regexWorker = null;
+        let regexTimer = null;
+        let regexSeq = 0;
+
+        function makeWorker() {
+            try {
+                return new Worker('regex-worker.js');
+            } catch (e) {
+                console.warn('[Regex] Worker unavailable, falling back to main thread:', e);
+                return null;
+            }
+        }
+
+        function stopWorker() {
+            if (regexTimer) { clearTimeout(regexTimer); regexTimer = null; }
+            if (regexWorker) { regexWorker.terminate(); regexWorker = null; }
+        }
+
+        function showTimeout(pattern) {
+            regexInput.classList.add('error');
+            matchInfo.innerHTML = '<span class="error-msg">Pattern timed out after ' +
+                (REGEX_TIMEOUT_MS / 1000) + 's — it may backtrack catastrophically on this input.</span>';
+            matchInfo.className = 'match-info';
+            matchesOutput.innerHTML = Utils.escapeHtml(testText.value);
+            subOutput.textContent = '';
+            window.currentMatches = [];
+        }
+
         function testRegex() {
             const pattern = regexInput.value;
             const flags = flagsInput.value;
             const text = testText.value;
             const replacement = subInput.value;
 
+            // Any in-flight run is now stale; kill it so a hung worker from a
+            // previous keystroke cannot report over a newer result.
+            stopWorker();
+
             if (!pattern) {
+                regexInput.classList.remove('error');
                 matchesOutput.innerHTML = '';
                 matchInfo.textContent = 'Enter a pattern';
                 matchInfo.className = 'match-info';
                 subOutput.textContent = '';
+                window.currentMatches = [];
                 return;
             }
 
+            const seq = ++regexSeq;
+            regexWorker = makeWorker();
+
+            if (!regexWorker) {
+                // No worker support: run inline and accept that a pathological
+                // pattern will block. Better than the tool not working at all.
+                runInline(pattern, flags, text, replacement);
+                return;
+            }
+
+            regexTimer = setTimeout(() => {
+                if (seq !== regexSeq) return;
+                stopWorker();
+                showTimeout(pattern);
+            }, REGEX_TIMEOUT_MS);
+
+            regexWorker.onmessage = (e) => {
+                if (seq !== regexSeq) return;
+                stopWorker();
+                const res = e.data;
+                if (res.ok) {
+                    regexInput.classList.remove('error');
+                    renderMatches(res.matches, text);
+                    subOutput.textContent = res.subOutput;
+                } else {
+                    showRegexError(res.error, text);
+                }
+            };
+
+            regexWorker.onerror = (err) => {
+                if (seq !== regexSeq) return;
+                stopWorker();
+                console.warn('[Regex] Worker failed, falling back to main thread:', err);
+                err.preventDefault?.();
+                runInline(pattern, flags, text, replacement);
+            };
+
+            regexWorker.postMessage({ pattern, flags, text, replacement });
+        }
+
+        // Same logic as the worker, for environments without Worker support.
+        function runInline(pattern, flags, text, replacement) {
             try {
-                const regex = new RegExp(pattern, flags);
+                new RegExp(pattern, flags);
                 regexInput.classList.remove('error');
 
-                // Find matches
                 const matches = [];
                 let match;
                 const globalRegex = new RegExp(pattern, flags.includes('g') ? flags : flags + 'g');
-                
+
                 while ((match = globalRegex.exec(text)) !== null) {
                     matches.push({
                         text: match[0],
@@ -360,44 +440,47 @@ URL: https://github.com/QQSHI13</textarea>
                     if (!flags.includes('g')) break;
                 }
 
-                // Render highlighted text
-                let html = '';
-                let lastIndex = 0;
-                matches.forEach((m, i) => {
-                    html += Utils.escapeHtml(text.slice(lastIndex, m.index));
-                    html += `<span class="match" onclick="showGroups(${i})" title="Match ${i + 1}">${Utils.escapeHtml(m.text)}</span>`;
-                    lastIndex = m.index + m.text.length;
-                });
-                html += Utils.escapeHtml(text.slice(lastIndex));
-                matchesOutput.innerHTML = html || Utils.escapeHtml(text);
+                renderMatches(matches, text);
 
-                // Update match info
-                if (matches.length > 0) {
-                    matchInfo.innerHTML = `Found <span class="match-count">${matches.length}</span> match${matches.length !== 1 ? 'es' : ''}`;
-                    matchInfo.className = 'match-info';
-                } else {
-                    matchInfo.textContent = 'No matches found';
-                    matchInfo.className = 'match-info';
-                }
-
-                // Store matches for group display
-                window.currentMatches = matches;
-
-                // Substitution preview
                 try {
-                    const subRegex = new RegExp(pattern, flags);
-                    subOutput.textContent = text.replace(subRegex, replacement);
+                    subOutput.textContent = text.replace(new RegExp(pattern, flags), replacement);
                 } catch (e) {
                     subOutput.textContent = 'Invalid replacement';
                 }
-
             } catch (e) {
-                regexInput.classList.add('error');
-                matchInfo.innerHTML = `<span class="error-msg">Invalid regex: ${Utils.escapeHtml(e.message)}</span>`;
-                matchInfo.className = 'match-info';
-                matchesOutput.innerHTML = Utils.escapeHtml(text);
-                subOutput.textContent = '';
+                showRegexError(e.message, text);
             }
+        }
+
+        function renderMatches(matches, text) {
+            let html = '';
+            let lastIndex = 0;
+            matches.forEach((m, i) => {
+                html += Utils.escapeHtml(text.slice(lastIndex, m.index));
+                html += `<span class="match" onclick="showGroups(${i})" title="Match ${i + 1}">${Utils.escapeHtml(m.text)}</span>`;
+                lastIndex = m.index + m.text.length;
+            });
+            html += Utils.escapeHtml(text.slice(lastIndex));
+            matchesOutput.innerHTML = html || Utils.escapeHtml(text);
+
+            if (matches.length > 0) {
+                matchInfo.innerHTML = `Found <span class="match-count">${matches.length}</span> match${matches.length !== 1 ? 'es' : ''}`;
+            } else {
+                matchInfo.textContent = 'No matches found';
+            }
+            matchInfo.className = 'match-info';
+
+            // Store matches for group display
+            window.currentMatches = matches;
+        }
+
+        function showRegexError(message, text) {
+            regexInput.classList.add('error');
+            matchInfo.innerHTML = `<span class="error-msg">Invalid regex: ${Utils.escapeHtml(message)}</span>`;
+            matchInfo.className = 'match-info';
+            matchesOutput.innerHTML = Utils.escapeHtml(text);
+            subOutput.textContent = '';
+            window.currentMatches = [];
         }
 
         function showGroups(matchIndex) {
