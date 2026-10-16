@@ -7,6 +7,10 @@
     <meta name="theme-color" content="#58a6ff">
     <link rel="manifest" href="manifest.json">
     <title>Game of Life Pattern Generator</title>
+    <meta name="description" content="Conway's Game of Life with 30+ classic patterns (gliders, pulsars, glider guns) — draw your own board, watch it evolve, and export the result.">
+    <meta property="og:title" content="Game of Life Pattern Generator">
+    <meta property="og:description" content="Conway's Game of Life with 30+ classic patterns (gliders, pulsars, glider guns) — draw your own board, watch it evolve, and export the result.">
+    <meta property="og:type" content="website">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230d1117'/><circle cx='50' cy='50' r='8' fill='%2358a6ff'/></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -102,10 +106,13 @@
             margin-bottom: 20px;
             overflow: auto;
             padding: 10px;
+            min-width: 0;
         }
         
         #grid {
             display: grid;
+            width: 100%;
+            min-width: 0;             /* let the board shrink inside the layout column */
             gap: 1px;
             background: #21262d;
             border: 2px solid #30363d;
@@ -113,9 +120,13 @@
             padding: 2px;
         }
         
+        /* Cells used to be a hard 18px, so a 30-cell board had a ~570px minimum and
+           could not fit a phone (and an 80-cell board overflowed desktops). They are
+           now fluid and stay square via aspect-ratio. */
         .cell {
-            width: 18px;
-            height: 18px;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1;
             background: #0d1117;
             cursor: pointer;
             transition: background 0.1s;
@@ -785,7 +796,12 @@
             });
 
             // Auto-refresh when controller changes (after skipWaiting)
+            // Only auto-reload when an UPDATE replaces a controller this page already had.
+            // On a first visit the new worker claims an uncontrolled page, and reloading
+            // there would cost every first-time visitor a second page load.
+            const swHadController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!swHadController) return;
                 window.location.reload();
             });
         }

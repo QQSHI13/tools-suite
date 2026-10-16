@@ -10,6 +10,10 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%F0%9F%94%8D%3C/text%3E%3C/svg%3E">
     <title>Regex Tester - Live Pattern Matching</title>
+    <meta name="description" content="Test regular expressions as you type: live match highlighting, capture groups and flags, with everything running locally in your browser.">
+    <meta property="og:title" content="Regex Tester — Live Pattern Matching">
+    <meta property="og:description" content="Test regular expressions as you type: live match highlighting, capture groups and flags, with everything running locally in your browser.">
+    <meta property="og:type" content="website">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230d1117' rx='20'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🔍%3C/text%3E%3C/svg%3E">
     <style>
         :root {
@@ -557,7 +561,12 @@ URL: https://github.com/QQSHI13</textarea>
             });
 
             // Auto-refresh when controller changes (after skipWaiting)
+            // Only auto-reload when an UPDATE replaces a controller this page already had.
+            // On a first visit the new worker claims an uncontrolled page, and reloading
+            // there would cost every first-time visitor a second page load.
+            const swHadController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!swHadController) return;
                 window.location.reload();
             });
         }

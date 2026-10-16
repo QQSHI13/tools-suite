@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Picker++</title>
+    <meta name="description" content="Color Picker++ — pick colors, convert between HEX, RGB and HSL, and generate harmonious palettes and color history instantly in your browser.">
+    <meta property="og:title" content="Color Picker++ — HEX / RGB / HSL Picker">
+    <meta property="og:description" content="Color Picker++ — pick colors, convert between HEX, RGB and HSL, and generate harmonious palettes and color history instantly in your browser.">
+    <meta property="og:type" content="website">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23667eea'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='white'>🎨</text></svg>">
     <meta name="theme-color" content="#667eea">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -49,9 +53,12 @@
 
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 30px;
+            min-width: 0;
         }
+
+        .main-content > * { min-width: 0; }
 
         .card {
             background: white;
@@ -90,6 +97,8 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex-wrap: wrap;          /* fixed 80px label + 60px swatch must be able to wrap */
+            min-width: 0;
         }
 
         .input-group label {
@@ -99,7 +108,8 @@
         }
 
         .input-group input[type="text"] {
-            flex: 1;
+            flex: 1 1 8rem;
+            min-width: 0;             /* flex items default to min-width:auto (input intrinsic ~177px) */
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
@@ -528,7 +538,12 @@
             });
 
             // Auto-refresh when controller changes (after skipWaiting)
+            // Only auto-reload when an UPDATE replaces a controller this page already had.
+            // On a first visit the new worker claims an uncontrolled page, and reloading
+            // there would cost every first-time visitor a second page load.
+            const swHadController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!swHadController) return;
                 window.location.reload();
             });
         }

@@ -10,6 +10,10 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%F0%9F%94%91%3C/text%3E%3C/svg%3E">
     <title>JWT Decoder - Inspect JSON Web Tokens</title>
+    <meta name="description" content="Decode and inspect JSON Web Tokens — header, payload, signature and expiry, all parsed locally so the token never leaves your machine.">
+    <meta property="og:title" content="JWT Decoder — Inspect JSON Web Tokens">
+    <meta property="og:description" content="Decode and inspect JSON Web Tokens — header, payload, signature and expiry, all parsed locally so the token never leaves your machine.">
+    <meta property="og:type" content="website">
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230d1117' rx='20'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🔑%3C/text%3E%3C/svg%3E" type="image/svg+xml">
     <style>
@@ -489,7 +493,12 @@
             });
 
             // Auto-refresh when controller changes (after skipWaiting)
+            // Only auto-reload when an UPDATE replaces a controller this page already had.
+            // On a first visit the new worker claims an uncontrolled page, and reloading
+            // there would cost every first-time visitor a second page load.
+            const swHadController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!swHadController) return;
                 window.location.reload();
             });
         }

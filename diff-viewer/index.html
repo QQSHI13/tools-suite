@@ -122,7 +122,12 @@
             });
 
             // Auto-refresh when controller changes (after skipWaiting)
+            // Only auto-reload when an UPDATE replaces a controller this page already had.
+            // On a first visit the new worker claims an uncontrolled page, and reloading
+            // there would cost every first-time visitor a second page load.
+            const swHadController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!swHadController) return;
                 window.location.reload();
             });
         }

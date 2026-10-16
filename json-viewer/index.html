@@ -10,6 +10,10 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%F0%9F%8C%B3%3C/text%3E%3C/svg%3E">
     <title>JSON Visualizer - Interactive JSON Viewer</title>
+    <meta name="description" content="An interactive JSON viewer that renders your data as a collapsible tree, with search, path copying and instant formatting — everything stays in your browser.">
+    <meta property="og:title" content="JSON Visualizer — Interactive JSON Viewer">
+    <meta property="og:description" content="An interactive JSON viewer that renders your data as a collapsible tree, with search, path copying and instant formatting — everything stays in your browser.">
+    <meta property="og:type" content="website">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230d1117' rx='20'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🌳%3C/text%3E%3C/svg%3E">
     <style>
@@ -472,7 +476,12 @@
             });
 
             // Auto-refresh when controller changes (after skipWaiting)
+            // Only auto-reload when an UPDATE replaces a controller this page already had.
+            // On a first visit the new worker claims an uncontrolled page, and reloading
+            // there would cost every first-time visitor a second page load.
+            const swHadController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!swHadController) return;
                 window.location.reload();
             });
         }

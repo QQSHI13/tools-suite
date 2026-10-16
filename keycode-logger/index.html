@@ -5,6 +5,10 @@
 <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Keycode Logger - Keyboard Event Debugger</title>
+    <meta name="description" content="Press any key to see its code, key, location and modifier state — a quick reference for debugging keyboard shortcuts and events.">
+    <meta property="og:title" content="Keycode Logger — Keyboard Event Debugger">
+    <meta property="og:description" content="Press any key to see its code, key, location and modifier state — a quick reference for debugging keyboard shortcuts and events.">
+    <meta property="og:type" content="website">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⌨️%3C/text%3E%3C/svg%3E">
     <meta name="theme-color" content="#0d1117">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -697,7 +701,12 @@
             });
 
             // Auto-refresh when controller changes (after skipWaiting)
+            // Only auto-reload when an UPDATE replaces a controller this page already had.
+            // On a first visit the new worker claims an uncontrolled page, and reloading
+            // there would cost every first-time visitor a second page load.
+            const swHadController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!swHadController) return;
                 window.location.reload();
             });
         }

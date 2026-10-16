@@ -9,6 +9,10 @@
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
     <title>API Tester - HTTP Client in Browser</title>
+    <meta name="description" content="A lightweight HTTP client in the browser — set method, headers, query parameters and a JSON body, send the request and inspect the response.">
+    <meta property="og:title" content="API Tester — HTTP Client in Your Browser">
+    <meta property="og:description" content="A lightweight HTTP client in the browser — set method, headers, query parameters and a JSON body, send the request and inspect the response.">
+    <meta property="og:type" content="website">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -96,6 +100,10 @@
         @media (max-width: 900px) {
             .main { grid-template-columns: 1fr; }
         }
+
+        /* Grid/flex children default to min-width:auto, which lets a wide child
+           (an input, a toolbar) push past the viewport instead of shrinking. */
+        .main > * { min-width: 0; }
         
         .sidebar {
             background: var(--bg);
@@ -191,6 +199,8 @@
             display: flex;
             gap: 8px;
             margin-bottom: 16px;
+            flex-wrap: wrap;          /* method + URL + Send must wrap on phones */
+            min-width: 0;
         }
         .method-select {
             background: var(--surface);
@@ -203,7 +213,8 @@
             cursor: pointer;
         }
         .url-input {
-            flex: 1;
+            flex: 1 1 12rem;
+            min-width: 0;             /* allow shrinking below the input's intrinsic width */
             background: var(--surface);
             border: 1px solid var(--border);
             color: var(--text);
@@ -238,6 +249,7 @@
         
         .tabs {
             display: flex;
+            flex-wrap: wrap;
             gap: 4px;
             margin-bottom: 16px;
             border-bottom: 1px solid var(--border);
@@ -264,7 +276,7 @@
         .headers-list { display: flex; flex-direction: column; gap: 8px; }
         .header-row {
             display: grid;
-            grid-template-columns: 1fr 1fr auto;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
             gap: 8px;
             align-items: center;
         }
@@ -354,6 +366,7 @@
         .body-editor:focus { outline: none; border-color: var(--accent); }
         .body-toolbar {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             margin-bottom: 8px;
         }
@@ -456,6 +469,7 @@
         /* Response toolbar */
         .response-toolbar {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             margin-bottom: 8px;
         }
@@ -1619,7 +1633,12 @@
             });
 
             // Auto-refresh when controller changes (after skipWaiting)
+            // Only auto-reload when an UPDATE replaces a controller this page already had.
+            // On a first visit the new worker claims an uncontrolled page, and reloading
+            // there would cost every first-time visitor a second page load.
+            const swHadController = !!navigator.serviceWorker.controller;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!swHadController) return;
                 window.location.reload();
             });
         }
