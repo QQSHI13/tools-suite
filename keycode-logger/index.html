@@ -15,6 +15,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%230d1117' rx='40'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%E2%8C%A8%EF%B8%8F%3C/text%3E%3C/svg%3E">
     <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="../shared/theme.css">
     <style>
         :root {
             --bg: #0d1117;
@@ -389,6 +390,55 @@
                 justify-content: center;
             }
         }
+
+        /* ---------- session state: held keys, lock lights, achievements ---------- */
+        .state-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .state-label { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-secondary); }
+        .held-chip {
+            padding: 3px 9px; border-radius: 6px; font-family: var(--font-mono); font-size: 11px;
+            background: var(--surface-hover); border: 1px solid var(--border); color: var(--text);
+        }
+        .held-chip.mod { border-color: var(--accent); color: var(--accent); }
+        .dim { color: var(--text-secondary); font-size: 12px; }
+
+        .locks { display: flex; gap: 8px; flex-wrap: wrap; }
+        .lock {
+            padding: 4px 10px; border-radius: 100px; border: 1px solid var(--border);
+            background: var(--surface); font-family: var(--font-mono); font-size: 11px;
+            color: var(--text-secondary); transition: background .15s, color .15s, border-color .15s;
+        }
+        .lock.on { background: var(--success); border-color: var(--success); color: #fff; }
+
+        .topkeys { display: flex; gap: 8px; flex-wrap: wrap; }
+        .topkey {
+            display: inline-flex; gap: 6px; align-items: center; padding: 3px 9px;
+            border-radius: 6px; background: var(--surface); border: 1px solid var(--border);
+            font-family: var(--font-mono); font-size: 11px;
+        }
+        .topkey b { color: var(--accent); }
+
+        .ev-badge {
+            font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 5px;
+            border: 1px solid var(--border); white-space: nowrap;
+        }
+        .ev-badge.down { color: var(--success); border-color: var(--success); }
+        .ev-badge.up   { color: var(--warning); border-color: var(--warning); }
+        .ev-badge.ime  { color: var(--error);   border-color: var(--error); }
+
+        .apply-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-top: 12px; }
+        .ach {
+            display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+            border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+            transition: border-color .2s, transform .2s;
+        }
+        .ach.locked { opacity: .55; }
+        .ach.just { border-color: var(--success); transform: translateY(-2px); }
+        .ach-icon { font-size: 18px; line-height: 1.2; }
+        .ach-name { font-size: 13px; font-weight: 600; color: var(--text); }
+        .ach-desc { font-size: 11.5px; color: var(--text-secondary); }
+        .ach-progress { font-family: var(--font-mono); font-size: 10.5px; color: var(--accent); margin-top: 2px; }
+        .sr-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+        .composing { color: var(--error); font-family: var(--font-mono); font-size: 12px; }
     </style>
 </head>
 <body>
@@ -410,6 +460,21 @@
             <div class="zone-hint">Keyboard events will be captured here</div>
         </div>
 
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="state-row" style="margin-bottom: 10px;">
+                <span class="state-label">Held</span>
+                <div class="state-row" id="heldKeys"><span class="dim">nothing down</span></div>
+            </div>
+            <div class="state-row">
+                <span class="state-label">Locks</span>
+                <div class="locks" id="lockLights"></div>
+            </div>
+            <div class="state-row" style="margin-top: 10px;">
+                <span class="state-label">Composing</span>
+                <span class="composing" id="composingText">—</span>
+            </div>
+        </div>
+
         <div class="last-event" id="lastEvent" style="display: none;">
             <div class="event-title">Last Event</div>
             <div class="event-display">
@@ -425,14 +490,38 @@
                     <input type="checkbox" id="preventDefault" checked>
                     Prevent default on arrow keys / space
                 </label>
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="logKeyup" checked>
+                    Log key releases
+                </label>
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="logComposition" checked>
+                    Log IME composition
+                </label>
             </div>
             <div class="history-list" id="historyList">
                 <div class="empty-state">No events captured yet. Press a key to start.</div>
             </div>
         </div>
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="section-header" style="margin-bottom: 6px;">
+                <span class="event-title">Most pressed</span>
+                <span class="dim">this session</span>
+            </div>
+            <div class="topkeys" id="topKeys"><span class="dim">no data yet</span></div>
+        </div>
+
+        <div class="card">
+            <div class="section-header" style="margin-bottom: 6px;">
+                <span class="event-title">Achievements</span>
+                <span class="dim"><span id="achCount">0/0</span> unlocked</span>
+            </div>
+            <div class="apply-grid" id="achGrid"></div>
+        </div>
     </main>
 
     <div class="copy-toast" id="copyToast">Copied to clipboard!</div>
+    <div class="sr-live" id="liveRegion" role="status" aria-live="polite"></div>
 
     <script src="../shared/utils.js"></script>
     <script>
@@ -451,6 +540,16 @@
         let eventHistory = [];
         let lastEventData = null;
 
+        // ---------- session state (keys held, locks, frequency, achievements) ----------
+        const heldRecords = new Map();     // code -> latest record while the key is down
+        const topCounts = new Map();       // code -> times pressed
+        const seenCodes = new Set();
+        const modsUsed = new Set();
+        let totalEvents = 0, maxChord = 0, maxRepeat = 0, sawFunction = false,
+            sawNumpad = false, capsLetter = false, composed = false, sawZeroKeyCode = false;
+        let rateWindow = { start: 0, count: 0, max: 0 };
+        let lockLights = {};
+
         const modifierKeys = ['Control', 'Alt', 'Shift', 'Meta'];
 
         function formatTime(date) {
@@ -462,6 +561,49 @@
             });
         }
 
+        // The four lock keys a keyboard can report; names match DOMStringList values.
+        const LOCK_NAMES = ['CapsLock', 'NumLock', 'ScrollLock', 'AltGraph'];
+
+        function readLocks(e) {
+            const out = {};
+            if (typeof e.getModifierState !== 'function') return out;
+            LOCK_NAMES.forEach(name => {
+                try { out[name] = e.getModifierState(name); } catch (err) { /* unsupported name */ }
+            });
+            return out;
+        }
+
+        /**
+         * Freeze an event into a plain record. History used to store the live event
+         * object, which meant reading properties later could reflect a newer state;
+         * a snapshot also lets IME composition events share the same renderer.
+         */
+        function snapshot(e, kind) {
+            kind = kind || e.type || 'event';
+            const isComposition = kind.indexOf('composition') === 0;
+            return {
+                kind: kind,
+                type: e.type || kind,
+                time: new Date(),
+                key: isComposition ? '(composing)' : (e.key !== undefined ? e.key : ''),
+                code: e.code || '',
+                keyCode: e.keyCode !== undefined ? e.keyCode : '',
+                which: e.which !== undefined ? e.which : '',
+                location: e.location !== undefined ? e.location : '',
+                repeat: !!e.repeat,
+                isComposing: !!(e.isComposing || isComposition),
+                data: e.data || '',
+                timeStamp: Math.round(e.timeStamp || 0),
+                ctrlKey: !!e.ctrlKey, altKey: !!e.altKey,
+                shiftKey: !!e.shiftKey, metaKey: !!e.metaKey,
+                locks: readLocks(e)
+            };
+        }
+
+        function isModifierRecord(r) {
+            return modifierKeys.indexOf(r.key) !== -1;
+        }
+
         function getModifierKeys(e) {
             const modifiers = [];
             if (e.ctrlKey) modifiers.push('Ctrl');
@@ -471,20 +613,20 @@
             return modifiers;
         }
 
-        function getKeyComboString(e) {
-            const modifiers = getModifierKeys(e);
-            if (modifierKeys.includes(e.key)) {
-                return modifiers.join('+') || e.key;
+        function getKeyComboString(r) {
+            const modifiers = getModifierKeys(r);
+            if (modifierKeys.includes(r.key)) {
+                return modifiers.join('+') || r.key;
             }
-            return [...modifiers, e.key].join('+');
+            const keyName = r.key === ' ' ? 'Space' : r.key;
+            return [...modifiers, keyName].filter(Boolean).join('+');
         }
 
-        function renderKeyCombo(e) {
-            const modifiers = getModifierKeys(e);
-            const isModifier = modifierKeys.includes(e.key);
+        function renderKeyCombo(r) {
+            const modifiers = getModifierKeys(r);
+            const isModifier = modifierKeys.includes(r.key);
 
             let html = '';
-
             modifiers.forEach((mod, i) => {
                 html += `<span class="key modifier">${Utils.escapeHtml(mod)}</span>`;
                 if (i < modifiers.length - 1 || !isModifier) {
@@ -493,26 +635,36 @@
             });
 
             if (!isModifier) {
-                const keyDisplay = e.key === ' ' ? 'Space' : Utils.escapeHtml(e.key);
+                const raw = r.kind.indexOf('composition') === 0 ? '(composing)' : r.key;
+                const keyDisplay = raw === ' ' ? 'Space' : Utils.escapeHtml(raw);
                 html += `<span class="key main">${keyDisplay}</span>`;
             }
-
             return html;
         }
 
-        function renderEventFields(e) {
+        function renderEventFields(r) {
+            const lockList = LOCK_NAMES
+                .filter(name => name in (r.locks || {}))
+                .map(name => `${name}=${r.locks[name] ? 'on' : 'off'}`)
+                .join('  ');
+
             const fields = [
-                { label: 'event.key', value: e.key, type: 'code' },
-                { label: 'event.code', value: e.code, type: 'code' },
-                { label: 'event.keyCode', value: e.keyCode, type: 'number' },
-                { label: 'event.which', value: e.which, type: 'number' },
-                { label: 'event.location', value: e.location, type: 'number' },
-                { label: 'event.repeat', value: e.repeat, type: 'boolean' },
-                { label: 'ctrlKey', value: e.ctrlKey, type: 'boolean' },
-                { label: 'altKey', value: e.altKey, type: 'boolean' },
-                { label: 'shiftKey', value: e.shiftKey, type: 'boolean' },
-                { label: 'metaKey', value: e.metaKey, type: 'boolean' }
+                { label: 'event.type', value: r.type, type: 'code' },
+                { label: 'event.key', value: r.key, type: 'code' },
+                { label: 'event.code', value: r.code, type: 'code' },
+                { label: 'event.keyCode', value: r.keyCode, type: 'number' },
+                { label: 'event.which', value: r.which, type: 'number' },
+                { label: 'event.location', value: r.location, type: 'number' },
+                { label: 'event.repeat', value: r.repeat, type: 'boolean' },
+                { label: 'event.isComposing', value: r.isComposing, type: 'boolean' },
+                { label: 'event.timeStamp', value: r.timeStamp + ' ms', type: 'number' },
+                { label: 'ctrlKey', value: r.ctrlKey, type: 'boolean' },
+                { label: 'altKey', value: r.altKey, type: 'boolean' },
+                { label: 'shiftKey', value: r.shiftKey, type: 'boolean' },
+                { label: 'metaKey', value: r.metaKey, type: 'boolean' }
             ];
+            if (r.data) fields.push({ label: 'event.data', value: r.data, type: 'code' });
+            if (lockList) fields.push({ label: 'getModifierState', value: lockList, type: 'code' });
 
             return fields.map(field => {
                 const value = field.type === 'code' ? Utils.escapeHtml(String(field.value)) : field.value;
@@ -525,29 +677,26 @@
             }).join('');
         }
 
-        function addToHistory(e) {
-            const now = new Date();
-            const combo = getKeyComboString(e);
-            
+        function addToHistory(record) {
             eventHistory.unshift({
-                time: now,
-                combo: combo,
-                event: e,
-                key: e.key,
-                code: e.code
+                time: record.time,
+                combo: getKeyComboString(record),
+                record: record,
+                type: record.type
             });
-
-            // Keep only last 50
-            if (eventHistory.length > 50) {
-                eventHistory = eventHistory.slice(0, 50);
-            }
-
+            if (eventHistory.length > 50) eventHistory = eventHistory.slice(0, 50);
             renderHistory();
         }
 
         function renderMiniKey(text) {
             if (text === ' ') return '<span class="mini-key">Space</span>';
             return `<span class="mini-key">${Utils.escapeHtml(text)}</span>`;
+        }
+
+        function badgeClassFor(type) {
+            if (type === 'keyup') return 'up';
+            if (type.indexOf('composition') === 0) return 'ime';
+            return 'down';
         }
 
         function renderHistory() {
@@ -557,54 +706,261 @@
             }
 
             historyList.innerHTML = eventHistory.map((item, index) => {
-                const keys = item.combo.split('+');
+                const r = item.record;
+                const keys = item.combo.split('+').filter(Boolean);
+                const label = item.type === 'keydown' ? 'down' : item.type === 'keyup' ? 'up' : 'IME';
                 return `
                     <div class="history-item" data-index="${index}">
                         <span class="time">${formatTime(item.time)}</span>
-                        <div class="combo">
-                            ${keys.map(renderMiniKey).join('')}
-                        </div>
-                        <span class="event-type">${item.event.type}</span>
+                        <div class="combo">${keys.map(renderMiniKey).join('')}</div>
+                        <span class="ev-badge ${badgeClassFor(item.type)}">${label}</span>
+                        <span class="event-type">${Utils.escapeHtml(String(r.code || ''))}</span>
                     </div>
                 `;
             }).join('');
 
-            // Add click handlers
             document.querySelectorAll('.history-item').forEach(item => {
                 item.addEventListener('click', () => {
-                    const index = parseInt(item.dataset.index);
-                    const historyItem = eventHistory[index];
-                    if (historyItem) {
-                        displayEvent(historyItem.event);
-                    }
+                    const entry = eventHistory[parseInt(item.dataset.index, 10)];
+                    if (entry) displayEvent(entry.record, false);
                 });
             });
         }
 
-        function displayEvent(e) {
-            lastEventData = e;
+        function displayEvent(record, isFresh) {
+            lastEventData = record;
 
             captureZone.classList.add('captured');
-            zoneIcon.textContent = '✓';
-            zoneText.textContent = `${e.type}: ${getKeyComboString(e)}`;
+            zoneIcon.textContent = record.type.indexOf('composition') === 0 ? '🈶' : '✓';
+            zoneText.textContent = `${record.type}: ${getKeyComboString(record)}`;
             document.querySelector('.zone-hint').textContent = 'Event captured!';
 
-            keyCombo.innerHTML = renderKeyCombo(e);
-            eventGrid.innerHTML = renderEventFields(e);
+            keyCombo.innerHTML = renderKeyCombo(record);
+            eventGrid.innerHTML = renderEventFields(record);
             lastEventSection.style.display = 'block';
+
+            if (isFresh !== false) announce(record);
+        }
+
+        // Screen readers get the same information the panel shows.
+        function announce(record) {
+            const live = document.getElementById('liveRegion');
+            if (!live) return;
+            const parts = [record.type, getKeyComboString(record)];
+            if (record.code) parts.push('code ' + record.code);
+            if (record.keyCode !== '') parts.push('keyCode ' + record.keyCode);
+            if (record.isComposing) parts.push('composing');
+            live.textContent = parts.join(', ');
+        }
+
+        // ---------- statistics & achievements ----------
+        const STATS_KEY = 'keycode_logger_stats_v1';
+        const ACH_KEY = 'keycode_logger_achievements_v1';
+
+        const FUNCTION_CODES = ['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'];
+        const HOME_ROW = ['KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL'];
+        const MAIN_CODES = HOME_ROW.concat(['KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO','KeyP',
+            'KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM']);
+
+        function loadJSON(key, fallback) {
+            try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch (err) { return fallback; }
+        }
+        function saveJSON(key, value) {
+            try { localStorage.setItem(key, JSON.stringify(value)); } catch (err) { /* private mode */ }
+        }
+
+        let stats = loadJSON(STATS_KEY, {
+            total: 0, maxChord: 0, maxRepeat: 0, maxPerSecond: 0,
+            sawFunction: false, sawNumpad: false, capsLetter: false,
+            composed: false, sawZeroKeyCode: false, codes: []
+        });
+        let unlocked = loadJSON(ACH_KEY, {});
+        const seenCodeSet = new Set(stats.codes || []);
+
+        const ACHIEVEMENTS = [
+            { id: 'first',    name: 'First Contact',  desc: 'Capture your first key',                 test: t => t.total >= 1 },
+            { id: 'mods',     name: 'Modifier Master',desc: 'Use Ctrl, Alt, Shift and Meta',          test: t => ['Ctrl','Alt','Shift','Meta'].every(m => t.mods && t.mods.includes(m)) },
+            { id: 'chord',    name: 'Chord Composer', desc: 'Press a 3-key chord',                    test: t => t.maxChord >= 3 },
+            { id: 'repeat',   name: 'Auto-Repeat',    desc: 'Hold a key for 20 repeats',              test: t => t.maxRepeat >= 20,
+              progress: t => [Math.min(t.maxRepeat, 20), 20] },
+            { id: 'fn',       name: 'Function Row',   desc: 'Press an F1–F12 key',                    test: t => t.sawFunction },
+            { id: 'numpad',   name: 'Numpad Navigator', desc: 'Press a numpad key',                   test: t => t.sawNumpad },
+            { id: 'arrows',   name: 'Arrow Smith',    desc: 'Press all four arrow keys',              test: t => ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].every(c => t.codes.includes(c)),
+              progress: t => [['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].filter(c => t.codes.includes(c)).length, 4] },
+            { id: 'home',     name: 'Home Row Hero',  desc: 'Press every home-row key',               test: t => HOME_ROW.every(c => t.codes.includes(c)),
+              progress: t => [HOME_ROW.filter(c => t.codes.includes(c)).length, HOME_ROW.length] },
+            { id: 'caps',     name: 'Caps Confusion', desc: 'Type a letter with CapsLock on',         test: t => t.capsLetter },
+            { id: 'ime',      name: 'IME Initiate',   desc: 'Trigger an IME composition',             test: t => t.composed },
+            { id: 'zero',     name: 'Ghost Key',      desc: 'See a key that reports keyCode 0',       test: t => t.sawZeroKeyCode },
+            { id: 'century',  name: 'Century',        desc: 'Capture 100 events',                     test: t => t.total >= 100, progress: t => [Math.min(t.total, 100), 100] },
+            { id: 'speed',    name: 'Speed Demon',    desc: '20 events within one second',            test: t => t.maxPerSecond >= 20,
+              progress: t => [Math.min(t.maxPerSecond, 20), 20] },
+            { id: 'marathon', name: 'Marathon',       desc: 'Capture 1000 events',                    test: t => t.total >= 1000, progress: t => [Math.min(t.total, 1000), 1000] },
+            { id: 'allkeys',  name: 'Completionist',  desc: 'Press every key on the three letter rows', test: t => MAIN_CODES.every(c => t.codes.includes(c)),
+              progress: t => [MAIN_CODES.filter(c => t.codes.includes(c)).length, MAIN_CODES.length] }
+        ];
+
+        function renderAchievements(justUnlocked) {
+            const grid = document.getElementById('achGrid');
+            if (!grid) return;
+            grid.innerHTML = ACHIEVEMENTS.map(a => {
+                const isUnlocked = !!unlocked[a.id];
+                const prog = a.progress ? a.progress(stats) : null;
+                return `<div class="ach ${isUnlocked ? '' : 'locked'} ${justUnlocked === a.id ? 'just' : ''}">
+                    <div class="ach-icon">${isUnlocked ? '🏆' : '🔒'}</div>
+                    <div>
+                        <div class="ach-name">${Utils.escapeHtml(a.name)}</div>
+                        <div class="ach-desc">${Utils.escapeHtml(a.desc)}</div>
+                        ${prog && !isUnlocked ? `<div class="ach-progress">${prog[0]}/${prog[1]}</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+            const count = document.getElementById('achCount');
+            if (count) count.textContent = ACHIEVEMENTS.filter(a => unlocked[a.id]).length + '/' + ACHIEVEMENTS.length;
+        }
+
+        function checkAchievements() {
+            for (const a of ACHIEVEMENTS) {
+                if (!unlocked[a.id] && a.test(stats)) {
+                    unlocked[a.id] = Date.now();
+                    saveJSON(ACH_KEY, unlocked);
+                    renderAchievements(a.id);
+                    showToast('🏆 Unlocked: ' + a.name);
+                    return;   // one at a time keeps the toast readable
+                }
+            }
+            renderAchievements();
+        }
+
+        function bumpStats(record, isDown) {
+            stats.total++;
+            const now = performance.now();
+            if (now - rateWindow.start > 1000) { rateWindow = { start: now, count: 0, max: rateWindow.max }; }
+            rateWindow.count++;
+            if (rateWindow.count > stats.maxPerSecond) stats.maxPerSecond = rateWindow.count;
+
+            // Everything below describes a *press*; counting releases as well made the
+            // "Most pressed" tally and the chord/repeat stats wrong.
+            if (isDown) {
+                if (record.repeat) {
+                    repeatRun++;
+                    if (repeatRun > stats.maxRepeat) stats.maxRepeat = repeatRun;
+                } else {
+                    repeatRun = 0;
+                }
+
+                // chord size = how many keys (including modifiers) are held right now
+                const chord = heldRecords.size;
+                if (chord > stats.maxChord) stats.maxChord = chord;
+            }
+
+            getModifierKeys(record).forEach(m => { if (modsUsedArr.indexOf(m) === -1) modsUsedArr.push(m); });
+            stats.mods = modsUsedArr;
+
+            if (record.code) {
+                if (isDown) topCounts.set(record.code, (topCounts.get(record.code) || 0) + 1);
+                if (!seenCodeSet.has(record.code)) {
+                    seenCodeSet.add(record.code);
+                    stats.codes.push(record.code);
+                    saveJSON(STATS_KEY, stats);
+                }
+            }
+            if (FUNCTION_CODES.indexOf(record.code) !== -1) stats.sawFunction = true;
+            if (String(record.code).indexOf('Numpad') === 0 || record.location === 3) stats.sawNumpad = true;
+            if (record.keyCode === 0) stats.sawZeroKeyCode = true;
+            if (record.locks && record.locks.CapsLock && /^[a-zA-Z]$/.test(record.key)) stats.capsLetter = true;
+            if (record.type.indexOf('composition') === 0) stats.composed = true;
+            saveJSON(STATS_KEY, stats);
+        }
+
+        let repeatRun = 0;
+        let modsUsedArr = (stats.mods || []).slice();
+
+        // ---------- panels ----------
+        function renderHeld() {
+            const box = document.getElementById('heldKeys');
+            if (!box) return;
+            if (heldRecords.size === 0) { box.innerHTML = '<span class="dim">nothing down</span>'; return; }
+            box.innerHTML = Array.from(heldRecords.values()).map(r =>
+                `<span class="held-chip ${isModifierRecord(r) ? 'mod' : ''}">${Utils.escapeHtml(getKeyComboString(r))}</span>`
+            ).join('');
+        }
+
+        function renderLocks() {
+            const box = document.getElementById('lockLights');
+            if (!box) return;
+            const names = Object.keys(lockLights);
+            if (names.length === 0) { box.innerHTML = '<span class="dim">no lock data yet</span>'; return; }
+            box.innerHTML = names.map(n =>
+                `<span class="lock ${lockLights[n] ? 'on' : ''}">${n}${lockLights[n] ? ' ON' : ''}</span>`
+            ).join('');
+        }
+
+        function renderTopKeys() {
+            const box = document.getElementById('topKeys');
+            if (!box) return;
+            const rows = Array.from(topCounts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8);
+            if (rows.length === 0) { box.innerHTML = '<span class="dim">no data yet</span>'; return; }
+            box.innerHTML = rows.map(([code, n]) => `<span class="topkey">${Utils.escapeHtml(code)} <b>${n}</b></span>`).join('');
+        }
+
+        function refreshStatePanels() {
+            renderHeld();
+            renderLocks();
+            renderTopKeys();
+        }
+
+        // ---------- event pipeline ----------
+        function processEvent(record) {
+            displayEvent(record, true);
+            addToHistory(record);
+
+            const isDown = record.type === 'keydown';
+            const heldKey = record.code || record.type;
+            // Only a press marks a key as held; a release must clear it (it used to be
+            // re-added here, so the "Held" strip never emptied).
+            if (isDown) heldRecords.set(heldKey, record);
+            else heldRecords.delete(heldKey);
+
+            // merge in place: reassigning would leave any live reference stale
+            Object.assign(lockLights, record.locks || {});
+
+            bumpStats(record, isDown);
+            refreshStatePanels();
+            checkAchievements();
         }
 
         function handleKeyEvent(e) {
-            // Prevent default for certain keys if checkbox is checked
             if (preventDefaultCheckbox.checked) {
                 const preventKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Tab'];
-                if (preventKeys.includes(e.key) || (e.key === ' ' && e.target === document.body)) {
+                if (preventKeys.indexOf(e.key) !== -1 || (e.key === ' ' && e.target === document.body)) {
                     e.preventDefault();
                 }
             }
+            processEvent(snapshot(e, 'keydown'));
+        }
 
-            displayEvent(e);
-            addToHistory(e);
+        function handleKeyUp(e) {
+            const logKeyup = document.getElementById('logKeyup');
+            if (logKeyup && !logKeyup.checked) {
+                heldRecords.delete(e.code);
+                refreshStatePanels();
+                return;
+            }
+            heldRecords.delete(e.code);
+            processEvent(snapshot(e, 'keyup'));
+        }
+
+        function handleComposition(e) {
+            const logIme = document.getElementById('logComposition');
+            if (logIme && !logIme.checked) return;
+            const text = document.getElementById('composingText');
+            if (text) {
+                text.textContent = e.type === 'compositionend'
+                    ? `committed "${e.data || ''}"`
+                    : `"${e.data || ''}" (${e.type.replace('composition', '')})`;
+            }
+            processEvent(snapshot(e, e.type));
         }
 
         function showToast(message) {
@@ -615,8 +971,20 @@
             }, 2000);
         }
 
-        // Event listeners - only capture keydown for history to avoid duplicates
+        // keydown for presses, keyup for releases (so held keys and chords are visible),
+        // plus IME composition — which no keycode tool usually shows.
         document.addEventListener('keydown', handleKeyEvent);
+        document.addEventListener('keyup', handleKeyUp);
+        ['compositionstart', 'compositionupdate', 'compositionend'].forEach(kind => {
+            document.addEventListener(kind, handleComposition);
+        });
+        // Keys don't send keyup if focus leaves the window: drop held state instead of getting stuck.
+        window.addEventListener('blur', () => {
+            heldRecords.clear();
+            refreshStatePanels();
+        });
+        refreshStatePanels();
+        renderAchievements();
 
         // Capture zone click to focus
         captureZone.addEventListener('click', () => {
@@ -634,6 +1002,11 @@
             document.querySelector('.zone-hint').textContent = 'Keyboard events will be captured here';
             lastEventSection.style.display = 'none';
             lastEventData = null;
+            heldRecords.clear();
+            topCounts.clear();
+            rateWindow = { start: 0, count: 0, max: stats.maxPerSecond };
+            document.getElementById('composingText').textContent = '—';
+            refreshStatePanels();
         });
 
         // Copy last event

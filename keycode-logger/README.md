@@ -54,3 +54,31 @@ Works in all modern browsers that support:
 
 Built by **QQ** with **Nova** ☄️
 
+
+---
+
+## What it captures now
+
+| Part | Detail |
+|---|---|
+| **Presses and releases** | `keydown` and `keyup` (toggleable) — releases are what make chords debuggable, so the "Held" strip shows exactly which keys are down right now, modifiers highlighted |
+| **Lock lights** | `CapsLock` / `NumLock` / `ScrollLock` / `AltGraph` read per event via `getModifierState()`, shown as ON/OFF pills |
+| **IME composition** | `compositionstart/update/end` plus `event.isComposing` — typing through a Chinese/Japanese IME is visible instead of appearing to do nothing |
+| **Event fields** | `type`, `key`, `code`, `keyCode`, `which`, `location`, `repeat`, `isComposing`, `timeStamp`, the four modifier booleans, `event.data`, and the lock state string |
+| **History** | newest-first with a `down` / `up` / `IME` badge per row; click any row to reload it into the panel |
+| **Most pressed** | per-`code` tally for the session — the fastest way to spot a shortcut collision |
+| **Achievements** | 15 badges (first key, 3-key chord, every home-row key, IME, 100/1000 events, 20 events/second, CapsLock typing, function row, numpad, keyCode 0, …) with progress counters, persisted in `localStorage` |
+| **Screen readers** | the last event is announced through an `aria-live` region |
+
+## Verification
+
+`check.mjs` runs the page's inline script against a minimal DOM stub and drives it with
+synthetic keyboard and IME events — no browser required:
+
+```bash
+node check.mjs        # 28/28 checks
+```
+
+It covers press/release handling, the held-key set, chord and repeat detection, lock
+lights, IME composition, the richer event fields, the aria-live announcement and the
+achievement unlocks. It runs in CI on every push and pull request (`.github/workflows/check.yml`).
