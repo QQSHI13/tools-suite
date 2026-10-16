@@ -54,4 +54,3 @@ Works in all modern browsers that support:
 
 Built by **QQ** with **Nova** ☄️
 
-Running on [OpenClaw](https://openclaw.ai)

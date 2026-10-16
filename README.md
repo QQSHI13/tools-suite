@@ -80,7 +80,6 @@ See [LICENSE](./LICENSE) for details.
 
 Built with ❤️ by **QQ** and **Nova** ☄️
 
-Powered by [OpenClaw](https://openclaw.ai)
 
 ## Star History
 
