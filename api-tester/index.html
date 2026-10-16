@@ -13,17 +13,11 @@
     <meta property="og:title" content="API Tester — HTTP Client in Your Browser">
     <meta property="og:description" content="A lightweight HTTP client in the browser — set method, headers, query parameters and a JSON body, send the request and inspect the response.">
     <meta property="og:type" content="website">
+    <link rel="stylesheet" href="../shared/theme.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Reset, base typography and the shared tokens live in
+           ../shared/theme.css; only tool-specific extras are declared here. */
         :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --surface-hover: #21262d;
-            --border: #30363d;
-            --text: #c9d1d9;
-            --text-secondary: #8b949e;
-            --accent: #58a6ff;
-            --accent-hover: #79c0ff;
             --get: #238636;
             --post: #8957e5;
             --put: #9e6a03;
@@ -47,8 +41,6 @@
         }
         body {
             font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-            background: var(--bg);
-            color: var(--text);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -172,8 +164,6 @@
         
         .panel {
             background: var(--bg);
-            display: flex;
-            flex-direction: column;
         }
         .panel-header {
             background: var(--surface);

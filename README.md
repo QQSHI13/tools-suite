@@ -51,6 +51,30 @@ cd tools-suite
 
 ---
 
+## 🎨 Theme (single source of truth)
+
+`shared/theme.css` is **the canonical design language** for this suite and for
+the sibling sites on `qqshi13.github.io` (collaboard, flow, bsod-studio): the
+design tokens (`--bg`, `--surface`, `--border`, `--text`, `--accent`, …) plus the
+shared primitives — reset/base typography, focus/selection/scrollbar styling,
+`.btn`/`.btn.primary`/`.btn.active`/`.btn-icon`, `.card`/`.panel`, `.badge`,
+`.toast`, `.sr-only`/`.visually-hidden`. Every page here links it (`../shared/theme.css`)
+and declares only what is page-specific (layout and any local overrides).
+
+Consumers do **not** load it over the network. Each site vendors a pinned,
+self-hosted copy at `theme/theme.css`, verified against `theme/theme.sha256`, and
+refreshes it with:
+
+```bash
+npm run theme              # scripts/sync-theme.mjs — fetch, verify, write
+npm run theme -- --check   # drift check (offline; runs in CI)
+```
+
+So: edit `shared/theme.css` here, commit + deploy this repo, then re-pin and
+re-vendor in the consumer (`npm run theme:pin && git commit`).
+
+---
+
 ## 🖼️ Screenshots
 
 *Dashboard with all tools displayed in a clean grid layout*

@@ -6,9 +6,11 @@
     <title>Particle Constellation</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%2358a6ff'/><text x='50' y='65' font-size='40' text-anchor='middle' fill='white'>✨</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../shared/theme.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        /* This page keeps its own (different) palette — see :root below — so it
+           only consumes the theme's reset, focus/selection/scrollbar styling
+           and shared primitives from ../shared/theme.css. */
         :root {
             --bg: #0a0c10;
             --surface: rgba(22, 27, 34, 0.8);

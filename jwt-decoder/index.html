@@ -16,24 +16,11 @@
     <meta property="og:type" content="website">
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230d1117' rx='20'/%3E%3Ctext x='50' y='65' font-size='50' text-anchor='middle'%3E🔑%3C/text%3E%3C/svg%3E" type="image/svg+xml">
+    <link rel="stylesheet" href="../shared/theme.css">
     <style>
-        :root {
-            --bg: #0d1117;
-            --surface: #161b22;
-            --surface-hover: #21262d;
-            --border: #30363d;
-            --text: #c9d1d9;
-            --text-secondary: #8b949e;
-            --accent: #58a6ff;
-            --success: #238636;
-            --error: #da3633;
-            --warning: #d29922;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Reset, base typography and tokens live in ../shared/theme.css. */
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
-            background: var(--bg);
-            color: var(--text);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -67,8 +54,6 @@
         }
         .panel {
             flex: 1;
-            display: flex;
-            flex-direction: column;
             min-width: 300px;
         }
         .panel-header {
